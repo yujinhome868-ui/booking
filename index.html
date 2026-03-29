@@ -1,5 +1,9 @@
 <!DOCTYPE html>
-<!-- index_v12.html — 修正：問題一(JSONP fallback+錯誤容錯) 問題二(效能優化：非阻塞字型/prefetch API/圖片優化) -->
+<!-- index_v13.html — 修正：
+     問題1(sessionStorage鎖改為email+場次組合key，換資料可重新報名)
+     問題2(Sticky CTA改觀察整個表單面板，滑到表單就消失)
+     問題3(圖片規格標注：課程卡1200×675/16:9、學員作品600×750/4:5，object-center防偏移)
+-->
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -395,12 +399,14 @@
         </div>
 
         <!-- ═══ 課程卡片實體 ═══ -->
+        <!-- 📐 課程主圖建議尺寸：1200×675px（16:9）
+             任何 16:9 的圖片皆可，object-fit:cover 自動裁切填滿，不變形 -->
         <div id="course-card" class="rounded-2xl overflow-hidden mb-3 shadow-lg"
              style="display:none;background:rgba(22,20,18,0.75);border:1px solid rgba(42,37,27,0.9);">
 
             <div class="relative w-full overflow-hidden rounded-t-2xl" style="aspect-ratio:16/9;">
                 <img id="course-image" src="" alt="課程圖片" decoding="async"
-                     class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+                     class="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 hover:scale-105"
                      style="display:block;">
                 <div id="course-image-fallback"
                      class="absolute inset-0 flex items-center justify-center"
@@ -510,6 +516,9 @@
         </div>
 
         <!-- ═══ 零基礎學員實作圖片展示 ═══ -->
+        <!-- 📐 學員作品圖建議尺寸：600×750px（4:5 直式）
+             任何接近 4:5（直式）的圖片皆可，object-fit:cover 自動裁切，主體置中
+             → 在 config 分頁 STUDENT_IMG1 / STUDENT_IMG2 填入圖片的公開 https 連結即可更換 -->
         <div class="mb-6 animate-fadeInUp" style="animation-delay:0.15s;">
             <div class="flex items-center gap-4 mb-4">
                 <div class="h-[1px] w-6 bg-gradient-to-r from-transparent to-[#D4B78F]/40"></div>
@@ -526,7 +535,7 @@
                         <img id="student-img-1" decoding="async" fetchpriority="low"
                              src="https://images.unsplash.com/photo-1487530811015-780d7d62f1db?auto=format&fit=crop&q=75&w=600"
                              alt="學員實作作品示意 - 敬神花藝"
-                             class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700"
+                             class="w-full h-full object-cover object-center opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700"
                              loading="lazy">
                     </div>
                     <div class="absolute inset-0 bg-gradient-to-t from-[#0D0C0B] via-transparent to-transparent"></div>
@@ -541,7 +550,7 @@
                         <img id="student-img-2" decoding="async" fetchpriority="low"
                              src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&q=75&w=600"
                              alt="學員實作作品示意 - 神明花手作"
-                             class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700"
+                             class="w-full h-full object-cover object-center opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700"
                              loading="lazy">
                     </div>
                     <div class="absolute inset-0 bg-gradient-to-t from-[#0D0C0B] via-transparent to-transparent"></div>
@@ -1322,14 +1331,32 @@
         const bookingForm = document.getElementById('bookingForm');
         const submitBtn   = document.getElementById('submitBtn');
         let regSubmitting = false;
+
+        // ⚠️ 修正：不再用 'reg_submitted'='1' 全局鎖，改為以「場次+email」組合為 key
+        // 避免同一 session 內換資料無法報名的問題
+        function getSubmittedKey(email, courseDate) {
+            return 'submitted_' + (courseDate || '').replace(/\s/g,'') + '_' + (email || '').toLowerCase().replace(/[^a-z0-9]/g,'_');
+        }
+        function markSubmitted(email, courseDate) {
+            try { sessionStorage.setItem(getSubmittedKey(email, courseDate), '1'); } catch(e) {}
+        }
+        function isAlreadySubmitted(email, courseDate) {
+            try { return sessionStorage.getItem(getSubmittedKey(email, courseDate)) === '1'; } catch(e) { return false; }
+        }
+
         bookingForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (regSubmitting) return;
             if (!Validator.validateRegForm()) return;
-            if (sessionStorage.getItem('reg_submitted') === '1') {
-                UI.showToast('您已送出過報名，請勿重複提交。如有疑問請加入官方 LINE 聯繫。', 'info');
+
+            // 只鎖「同一場次 + 同一 email」組合，換 email 可重新嘗試
+            const emailVal  = (document.getElementById('reg-email')?.value || '').trim().toLowerCase();
+            const courseKey = sessionStorage.getItem('reg_course_date') || '';
+            if (isAlreadySubmitted(emailVal, courseKey)) {
+                UI.showToast('此 Email 已送出過本場次報名。如需更改資料請加入官方 LINE 聯繫。', 'info');
                 return;
             }
+
             regSubmitting = true;
             UI.setBtnLoading(submitBtn, true, '確認提交報名');
             const fd = new FormData(bookingForm);
@@ -1351,7 +1378,8 @@
                     UI.setBtnLoading(submitBtn, false, '確認提交報名');
                     return;
                 }
-                sessionStorage.setItem('reg_submitted', '1');
+                // 成功：記錄此 email+場次 已送出
+                markSubmitted(emailVal, courseKey);
                 if (data.status === '🔸備取') {
                     fireLeadEvent('候補');
                     UI.showResult({
@@ -1373,18 +1401,15 @@
                 UI.setBtnLoading(submitBtn, false, '確認提交報名');
             } finally {
                 regSubmitting = false;
-                ['reg-phone','reg-email'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el && sessionStorage.getItem('reg_submitted') === '1') el.value = '';
-                });
             }
         });
 
         // ── Sticky Bottom CTA ──
         (() => {
             const stickyCta = document.getElementById('sticky-cta');
-            const formZone  = document.getElementById('form-submit-zone');
-            if (!stickyCta || !formZone) return;
+            // 觀察整個表單面板（.glass-panel），進入視窗後 CTA 消失
+            const formPanel = document.querySelector('.glass-panel');
+            if (!stickyCta || !formPanel) return;
 
             let formVisible  = false;
             let scrolledOver = false;
@@ -1395,13 +1420,14 @@
                     : stickyCta.classList.add('translate-y-full');
             }
 
+            // threshold:0.05 = 表單頂部剛露出 5% 就讓 CTA 消失，引導感更直覺
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => { formVisible = entry.isIntersecting; updateCTA(); });
-            }, { threshold: 0.1 });
-            observer.observe(formZone);
+            }, { threshold: 0.05 });
+            observer.observe(formPanel);
 
             window.addEventListener('scroll', () => {
-                scrolledOver = window.scrollY > 300; updateCTA();
+                scrolledOver = window.scrollY > 200; updateCTA();
             }, { passive: true });
         })();
 
