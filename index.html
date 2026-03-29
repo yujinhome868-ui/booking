@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- index_v12.html — 修正：問題一(JSONP fallback+錯誤容錯) 問題二(效能優化：非阻塞字型/prefetch API/圖片優化) -->
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -75,8 +76,15 @@
     <link rel="preconnect" href="https://script.google.com">
     <link rel="preconnect" href="https://script.googleusercontent.com">
 
-    <!-- ════ 字型：font-display=swap 防止 FOIT ════ -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <!-- ════ 字型：非阻塞載入，防止 FOIT ════ -->
+    <!-- media print trick：先以 print 載入（不阻塞），onload 切回 all -->
+    <link rel="preload" as="style"
+          href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap"
+          rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    </noscript>
 
     <!-- ════ Font Awesome：media print trick → 非阻塞載入 ════ -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
@@ -351,7 +359,7 @@
     <!-- ═══ Hero ═══ -->
     <header class="relative h-[28vh] md:h-[35vh] flex items-center justify-center overflow-hidden">
         <div class="absolute inset-0 bg-cover bg-center opacity-10 scale-110" id="hero-bg"
-             style="background-image:url('https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&q=80&w=1600');will-change:transform;"></div>
+             style="background-image:url('https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&q=80&w=1200');will-change:transform;"></div>
         <div class="absolute inset-0 bg-gradient-to-b from-transparent via-[#0D0C0B]/80 to-[#0D0C0B]"></div>
         <div class="relative text-center px-6 animate-fadeInUp">
             <div class="inline-block px-4 py-1 border border-[#D4B78F]/20 rounded-full text-xs tracking-[0.4em] text-[#A39171] mb-4 uppercase">Exquisite Floral Class</div>
@@ -515,8 +523,8 @@
                 <div class="group relative overflow-hidden rounded-xl border border-[#2A251B] hover:border-[#D4B78F]/30 transition-all duration-500"
                      style="background:rgba(22,20,18,0.6);">
                     <div class="aspect-[4/5] overflow-hidden">
-                        <img id="student-img-1" decoding="async"
-                             src="https://images.unsplash.com/photo-1487530811015-780d7d62f1db?auto=format&fit=crop&q=80&w=600"
+                        <img id="student-img-1" decoding="async" fetchpriority="low"
+                             src="https://images.unsplash.com/photo-1487530811015-780d7d62f1db?auto=format&fit=crop&q=75&w=600"
                              alt="學員實作作品示意 - 敬神花藝"
                              class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700"
                              loading="lazy">
@@ -530,8 +538,8 @@
                 <div class="group relative overflow-hidden rounded-xl border border-[#2A251B] hover:border-[#D4B78F]/30 transition-all duration-500"
                      style="background:rgba(22,20,18,0.6);">
                     <div class="aspect-[4/5] overflow-hidden">
-                        <img id="student-img-2" decoding="async"
-                             src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&q=80&w=600"
+                        <img id="student-img-2" decoding="async" fetchpriority="low"
+                             src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&q=75&w=600"
                              alt="學員實作作品示意 - 神明花手作"
                              class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700"
                              loading="lazy">
@@ -978,8 +986,31 @@
 
         // ── API ──
         const Api = {
+            // JSONP fallback：解決某些瀏覽器/WebView 對 GAS redirect 的 CORS 限制
+            _jsonpCheckFull() {
+                return new Promise((resolve, reject) => {
+                    const cbName = '__gas_cb_' + Date.now();
+                    const script = document.createElement('script');
+                    const timer  = setTimeout(() => {
+                        cleanup(); reject(new Error('JSONP timeout'));
+                    }, 10000);
+                    function cleanup() {
+                        clearTimeout(timer);
+                        delete window[cbName];
+                        if (script.parentNode) script.parentNode.removeChild(script);
+                    }
+                    window[cbName] = (data) => {
+                        cleanup();
+                        if (data && data.result === 'error') { reject(new Error('GAS: ' + data.message)); return; }
+                        resolve(data);
+                    };
+                    script.onerror = () => { cleanup(); reject(new Error('JSONP script load failed')); };
+                    script.src = `${CONFIG.scriptURL}?action=${CONFIG.actions.CHECK_FULL}&callback=${cbName}&_=${Date.now()}`;
+                    document.head.appendChild(script);
+                });
+            },
             async checkFull(){
-                // 效能優化：加入 AbortController 超時控制（8秒）
+                // 先嘗試 fetch，失敗後自動 fallback 到 JSONP
                 const ctrl = new AbortController();
                 const timeout = setTimeout(() => ctrl.abort(), 8000);
                 try {
@@ -991,13 +1022,15 @@
                     const text = await res.text();
                     let data;
                     try { data = JSON.parse(text); }
-                    catch(e) { throw new Error('回應格式錯誤，請確認 GAS 已重新部署，並確認 scriptURL 已更新'); }
+                    catch(e) { throw new Error('JSON parse error'); }
                     if (data.result === 'error') throw new Error('GAS: ' + data.message);
                     if (typeof data !== 'object' || Array.isArray(data)) throw new Error('非法回應格式');
                     return data;
-                } catch(e) {
+                } catch(fetchErr) {
                     clearTimeout(timeout);
-                    throw e;
+                    // fetch 失敗 → 嘗試 JSONP
+                    console.warn('[Api.checkFull] fetch failed, trying JSONP:', fetchErr.message);
+                    return await this._jsonpCheckFull();
                 }
             },
             async post(fd){
@@ -1054,6 +1087,13 @@
                 sessionStorage.removeItem('reg_submitted');
             }
             sessionStorage.setItem('reg_course_date', courseDate);
+        }
+
+        // ════ 效能優化：提前發起 API 請求（不等 DOMContentLoaded）════
+        // GAS 冷啟動約 1-3 秒，提前 kick 可節省這段等待時間
+        let _prefetchPromise = null;
+        if (CONFIG.scriptURL && !CONFIG.scriptURL.includes('請貼入')) {
+            _prefetchPromise = Api.checkFull().catch(() => null);
         }
 
         // ── 套用狀態 ──
@@ -1128,7 +1168,11 @@
             async function initWithRetry(maxRetry=3, delay=2000) {
                 for (let attempt=1; attempt<=maxRetry; attempt++) {
                     try {
-                        const data = await Api.checkFull();
+                        // 第一次嘗試優先使用提前發起的 prefetch 請求
+                        const data = (attempt === 1 && _prefetchPromise)
+                            ? await _prefetchPromise
+                            : await Api.checkFull();
+                        if (!data) throw new Error('prefetch returned null');
                         const courseText = `${data.courseName}｜${data.courseDate}｜${data.coursePrice}`;
                         const display = document.getElementById('course-display');
                         const hidden  = document.getElementById('hidden-course');
@@ -1203,13 +1247,33 @@
                         if (attempt < maxRetry) {
                             await new Promise(r => setTimeout(r, delay));
                         } else {
+                            // API 全部失敗：revealUI 讓表單可用，course-display 顯示降級提示（不擋操作）
                             revealUI(); isFirstLoad = false;
                             const display = document.getElementById('course-display');
                             if (display) {
-                                display.textContent = '課程資訊暫時無法載入，請重新整理頁面';
-                                display.style.color = '#c0392b';
+                                display.textContent = '課程資訊載入中，請稍候或重新整理頁面';
+                                display.style.color = '#A39171';
                             }
-                            console.error('[init] 三次重試均失敗。\n可能原因：\n1. scriptURL 是舊帳號的 URL（最常見！請更新 CONFIG.scriptURL）\n2. GAS 未重新部署\n解法：GAS → 部署 → 管理部署 → 建立新版本 → 複製 URL → 貼入 index.html');
+                            // 靜默重試（5秒後再試一次，不打擾用戶）
+                            setTimeout(async () => {
+                                try {
+                                    const data = await Api.checkFull();
+                                    const courseText = `${data.courseName}｜${data.courseDate}｜${data.coursePrice}`;
+                                    const display = document.getElementById('course-display');
+                                    if (display) { display.textContent = courseText; display.style.color = ''; }
+                                    const hidden = document.getElementById('hidden-course');
+                                    if (hidden) hidden.value = courseText;
+                                    applyState(data, false);
+                                    startPolling();
+                                } catch(e2) {
+                                    const display = document.getElementById('course-display');
+                                    if (display) {
+                                        display.textContent = '課程資訊暫時無法載入，請重新整理頁面';
+                                        display.style.color = '#c0392b';
+                                    }
+                                    console.error('[init] 所有重試均失敗。\n可能原因：\n1. scriptURL 是舊帳號的 URL（最常見！請更新 CONFIG.scriptURL）\n2. GAS 未重新部署\n解法：GAS → 部署 → 管理部署 → 建立新版本 → 複製 URL → 貼入 index.html');
+                                }
+                            }, 5000);
                         }
                     }
                 }
