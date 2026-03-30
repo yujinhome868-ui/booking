@@ -1,21 +1,14 @@
 <!DOCTYPE html>
-<!-- index_v72.html — v7.2 修正版
-     ✅ 問題一修正：課程場次載入失敗
-        → 根本原因：GAS Web App 部署為「僅自己」或「任何人（舊版）」時 fetch() 會因重導向失敗
-        → 解法：Api.checkFull 改為「純 JSONP 優先」策略，fetch 作為後備
-                fetch 失敗時立即切換 JSONP，不等 3 次重試才切換
-        → 加入 no-cors 模式偵測 → 確認 GAS URL 可達後才用 fetch
-     ✅ 問題二修正：圖片無法載入
-        → 根本原因：/uc?export=view 產生 302 → 重導向目標帶 SameSite Cookie 阻擋
-        → 解法（GAS 側）：convertDriveUrl 改輸出 /thumbnail?id=...&sz=w1200
-        → 解法（前端側）：img crossOrigin="anonymous" + referrerpolicy="no-referrer"
-                          + onerror 自動 fallback 到 /uc 端點再試一次
-     ✅ 問題三修正：載入速度優化
-        → Tailwind 改為純 CDN defer（不阻塞 FCP）
-        → 關鍵樣式全部 inline（Critical CSS）
-        → API 在 <head> 解析完就立即 prefetch（script async 注入）
-        → 移除重複的字體宣告，preload 後直接 onload swap
-        → 圖片全部 decoding="async" loading="lazy"（課程主圖除外）
+<!-- index_v73.html — v7.3 修正版
+     ✅ 圖片修正（根本原因）：
+        → 舊版用 new Image() + crossOrigin="anonymous" 預測試
+          → Drive thumbnail 不支援 CORS → 測試永遠失敗 → 顯示「請確認公開」
+        → 修正：直接設定 img.src，用 img.onload/onerror 處理，移除 crossorigin 屬性
+        → convertDriveUrl 新增 open?id= 格式支援
+     ✅ 速度優化：
+        → prefetch GAS 提前到 <head> inline script 立即觸發（不等 DOMContentLoaded）
+        → 字型加 display=swap
+        → 課程主圖 fetchpriority="high"
 -->
 <html lang="zh-TW">
 <head>
@@ -34,16 +27,18 @@
     <link rel="canonical" href="">
     <meta name="referrer" content="origin-when-cross-origin">
 
-    <!-- ════ DNS prefetch & preconnect（放最前，越早越好）════ -->
+    <!-- ════ DNS prefetch & preconnect ════ -->
     <link rel="dns-prefetch" href="https://script.google.com">
     <link rel="dns-prefetch" href="https://script.googleusercontent.com">
     <link rel="dns-prefetch" href="https://fonts.googleapis.com">
     <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
     <link rel="dns-prefetch" href="https://drive.google.com">
+    <link rel="dns-prefetch" href="https://lh3.googleusercontent.com">
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://script.google.com">
     <link rel="preconnect" href="https://script.googleusercontent.com">
+    <link rel="preconnect" href="https://lh3.googleusercontent.com" crossorigin>
 
     <!-- ════ 字型非阻塞載入 ════ -->
     <link rel="preload" as="style"
@@ -290,7 +285,7 @@
 
         .section-hidden { display:none !important; }
 
-        /* ─── v7.2：圖片容器 ─── */
+        /* ─── v7.3：圖片容器 ─── */
         .img-loading {
             background: linear-gradient(90deg, #1a1814 25%, #262219 50%, #1a1814 75%);
             background-size: 200% 100%;
@@ -322,6 +317,28 @@
         }
         #config-sync-indicator.show { opacity:1; }
     </style>
+
+    <!-- ════ v7.3：GAS JSONP prefetch — 在 head 解析完立即觸發，不等 DOMContentLoaded ════
+         這讓網路請求提早 ~300-600ms，資料在 JS 初始化前就已在路上
+    -->
+    <script>
+    (function() {
+        var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxj3oGPP5Ck0EwnThYWo_d8BVjlf4MCiE2cby5WusM_504oV_Rz7OFAQw2Qjgxba0Pf/exec';
+        var cbName = '__gas_prefetch_' + Date.now();
+        window[cbName] = function(data) {
+            window.__gasPrefetchData = data;
+            delete window[cbName];
+            var s = document.getElementById('__gas_prefetch_script');
+            if (s && s.parentNode) s.parentNode.removeChild(s);
+        };
+        var s = document.createElement('script');
+        s.id = '__gas_prefetch_script';
+        s.src = SCRIPT_URL + '?action=checkFull&callback=' + cbName + '&_=' + Date.now();
+        s.async = true;
+        s.onerror = function() { delete window[cbName]; };
+        document.head.appendChild(s);
+    })();
+    </script>
 </head>
 
 <body class="bg-pattern min-h-screen">
@@ -389,13 +406,12 @@
              style="display:none;background:rgba(22,20,18,0.75);border:1px solid rgba(42,37,27,0.9);">
 
             <div class="relative w-full overflow-hidden rounded-t-2xl" style="aspect-ratio:16/9;">
-                <!-- v7.2 修正：圖片用 img 標籤 + crossOrigin + referrerpolicy -->
+                <!-- v7.3 修正：移除 crossorigin，直接用 img.src + onload/onerror -->
                 <div id="course-image-wrap" class="absolute inset-0 img-loading">
                     <img id="course-image"
                          src="" alt="課程圖片"
                          decoding="async"
-                         crossorigin="anonymous"
-                         referrerpolicy="no-referrer"
+                         fetchpriority="high"
                          class="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 hover:scale-105"
                          style="display:none; opacity:0; transition: opacity 0.4s ease;">
                     <div id="course-image-fallback" class="absolute inset-0 img-error-fallback" style="display:none;">
@@ -517,7 +533,6 @@
                     <div class="aspect-[4/5] overflow-hidden">
                         <img id="student-img-1"
                              decoding="async" loading="lazy"
-                             crossorigin="anonymous" referrerpolicy="no-referrer"
                              src="https://images.unsplash.com/photo-1487530811015-780d7d62f1db?auto=format&fit=crop&q=75&w=600"
                              alt="學員實作作品示意 - 敬神花藝"
                              class="w-full h-full object-cover object-center opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700">
@@ -533,7 +548,6 @@
                     <div class="aspect-[4/5] overflow-hidden">
                         <img id="student-img-2"
                              decoding="async" loading="lazy"
-                             crossorigin="anonymous" referrerpolicy="no-referrer"
                              src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&q=75&w=600"
                              alt="學員實作作品示意 - 神明花手作"
                              class="w-full h-full object-cover object-center opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700">
@@ -819,44 +833,51 @@
         'use strict';
 
         // ════════════════════════════════════════════
-        // ⚙️ 設定區 — 部署後請更新 scriptURL
+        // ⚙️ 設定區
         // ════════════════════════════════════════════
         const CONFIG = {
             scriptURL: 'https://script.google.com/macros/s/AKfycbxj3oGPP5Ck0EwnThYWo_d8BVjlf4MCiE2cby5WusM_504oV_Rz7OFAQw2Qjgxba0Pf/exec',
-            // ↑↑↑ 請將上方 URL 換成您最新的部署 URL ↑↑↑
             actions: { CHECK_FULL:'checkFull', REGISTER:'register', WAITLIST:'waitlist' },
             URGENCY_THRESHOLD: 3,
             FUSE_THRESHOLD:   10,
             POLL_INTERVAL:  20000,
             LOCAL_CACHE_TTL: 15000,
-            // v7.2：JSONP 優先，fetch 作後備（解決 GAS redirect CORS 問題）
             PREFER_JSONP: true
         };
 
         // ════════════════════════════════════════════
-        // v7.2 修正：Google Drive URL 轉換（前端側）
-        // 改用 /thumbnail 端點，避免 /uc?export=view 的 302 重導向 CORS 問題
+        // v7.3 修正：Google Drive URL 轉換
+        // 支援格式：
+        //   /file/d/ID/view
+        //   /open?id=ID
+        //   ?id=ID 或 &id=ID
+        //   已是 /thumbnail 格式
+        //   其他 https 連結直接回傳
         // ════════════════════════════════════════════
         function convertDriveUrl(url) {
             if (!url || typeof url !== 'string') return '';
             url = url.trim();
-            // 已是 thumbnail 格式
+            if (!url) return '';
+            // 已是 thumbnail 格式，直接用
             if (url.indexOf('drive.google.com/thumbnail') >= 0) return url;
-            // /file/d/ID/ 格式
-            const m1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-            if (m1 && m1[1]) return `https://drive.google.com/thumbnail?id=${m1[1]}&sz=w1200`;
-            // ?id= 或 /uc?...&id= 格式
-            const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-            if (m2 && m2[1]) return `https://drive.google.com/thumbnail?id=${m2[1]}&sz=w1200`;
+            // /file/d/ID/ 格式（最常見）
+            var m1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+            if (m1 && m1[1]) return 'https://drive.google.com/thumbnail?id=' + m1[1] + '&sz=w1200';
+            // /open?id=ID 格式
+            var m2 = url.match(/\/open\?id=([a-zA-Z0-9_-]+)/);
+            if (m2 && m2[1]) return 'https://drive.google.com/thumbnail?id=' + m2[1] + '&sz=w1200';
+            // ?id= 或 &id= 格式（/uc?export=view&id=... 等）
+            var m3 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+            if (m3 && m3[1]) return 'https://drive.google.com/thumbnail?id=' + m3[1] + '&sz=w1200';
             // 其他 https 連結直接回傳
-            if (/^https:\/\//.test(url)) return url;
+            if (/^https?:\/\//.test(url)) return url;
             return '';
         }
 
         // ════════════════════════════════════════════
         // 本地快取（短 TTL）
         // ════════════════════════════════════════════
-        let _localCache = null, _localCacheTime = 0;
+        var _localCache = null, _localCacheTime = 0;
         function getLocalCache() {
             if (_localCache && (Date.now() - _localCacheTime) < CONFIG.LOCAL_CACHE_TTL) return _localCache;
             return null;
@@ -866,46 +887,46 @@
 
         // UTM 解析
         function parseUTM() {
-            const p = new URLSearchParams(window.location.search);
+            var p = new URLSearchParams(window.location.search);
             document.getElementById('utm_source').value   = p.get('utm_source')   || '';
             document.getElementById('utm_medium').value   = p.get('utm_medium')   || '';
             document.getElementById('utm_campaign').value = p.get('utm_campaign') || '';
-            const cleanUrl = window.location.href.split('?')[0];
-            const ogUrl = document.querySelector('meta[property="og:url"]');
+            var cleanUrl = window.location.href.split('?')[0];
+            var ogUrl = document.querySelector('meta[property="og:url"]');
             if (ogUrl) ogUrl.setAttribute('content', cleanUrl);
-            const canon = document.querySelector('link[rel="canonical"]');
+            var canon = document.querySelector('link[rel="canonical"]');
             if (canon && !canon.getAttribute('href')) canon.setAttribute('href', cleanUrl);
         }
 
         // 骨架屏 → 真實內容
         function revealUI() {
             ['sk-name','sk-phone','sk-email','sk-course','sk-checkbox','sk-btn',
-             'sk-info-1','sk-info-2','sk-info-3','sk-course-card'].forEach(id => {
-                const el = document.getElementById(id);
+             'sk-info-1','sk-info-2','sk-info-3','sk-course-card'].forEach(function(id) {
+                var el = document.getElementById(id);
                 if (el) el.style.display = 'none';
             });
             ['reg-name','reg-phone','reg-email','course-display',
              'checkbox-wrap','privacy-wrap','info-card-1','info-card-2','info-card-3',
-             'seats-status-wrap','course-card','course-proof-strip'].forEach(id => {
-                const el = document.getElementById(id);
+             'seats-status-wrap','course-card','course-proof-strip'].forEach(function(id) {
+                var el = document.getElementById(id);
                 if (el) el.style.display = '';
             });
-            const btn = document.getElementById('submitBtn');
+            var btn = document.getElementById('submitBtn');
             if (btn) { btn.style.display = ''; btn.disabled = false; }
         }
 
         // 表單驗證
-        const Validator = {
-            isEmail:  v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()),
-            isPhone:  v => /^09\d{8}$/.test(v.trim().replace(/[-\s]/g, '')),
-            notEmpty: v => v.trim().length > 0,
-            showError(f,e){ document.getElementById(f)?.classList.add('field-error'); document.getElementById(e)?.classList.add('visible'); },
-            clearError(f,e){ document.getElementById(f)?.classList.remove('field-error'); document.getElementById(e)?.classList.remove('visible'); },
-            validateRegForm() {
-                let ok = true;
-                const name=document.getElementById('reg-name').value, phone=document.getElementById('reg-phone').value,
-                      email=document.getElementById('reg-email').value, agree=document.getElementById('reg-agreement').checked,
-                      privacy=document.getElementById('reg-privacy').checked;
+        var Validator = {
+            isEmail:  function(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()); },
+            isPhone:  function(v) { return /^09\d{8}$/.test(v.trim().replace(/[-\s]/g, '')); },
+            notEmpty: function(v) { return v.trim().length > 0; },
+            showError: function(f,e){ document.getElementById(f)&&document.getElementById(f).classList.add('field-error'); document.getElementById(e)&&document.getElementById(e).classList.add('visible'); },
+            clearError: function(f,e){ document.getElementById(f)&&document.getElementById(f).classList.remove('field-error'); document.getElementById(e)&&document.getElementById(e).classList.remove('visible'); },
+            validateRegForm: function() {
+                var ok = true;
+                var name=document.getElementById('reg-name').value, phone=document.getElementById('reg-phone').value,
+                    email=document.getElementById('reg-email').value, agree=document.getElementById('reg-agreement').checked,
+                    privacy=document.getElementById('reg-privacy').checked;
                 if (!this.notEmpty(name))  { this.showError('reg-name','err-reg-name');           ok=false; } else this.clearError('reg-name','err-reg-name');
                 if (!this.isPhone(phone))  { this.showError('reg-phone','err-reg-phone');         ok=false; } else this.clearError('reg-phone','err-reg-phone');
                 if (!this.isEmail(email))  { this.showError('reg-email','err-reg-email');         ok=false; } else this.clearError('reg-email','err-reg-email');
@@ -913,10 +934,10 @@
                 if (!privacy)              { this.showError('reg-privacy','err-reg-privacy');     ok=false; } else this.clearError('reg-privacy','err-reg-privacy');
                 return ok;
             },
-            validateWaitlistForm() {
-                let ok = true;
-                const name=document.getElementById('wl-name').value, phone=document.getElementById('wl-phone').value,
-                      email=document.getElementById('wl-email').value;
+            validateWaitlistForm: function() {
+                var ok = true;
+                var name=document.getElementById('wl-name').value, phone=document.getElementById('wl-phone').value,
+                    email=document.getElementById('wl-email').value;
                 if (!this.notEmpty(name))  { this.showError('wl-name','err-wl-name');   ok=false; } else this.clearError('wl-name','err-wl-name');
                 if (!this.isPhone(phone))  { this.showError('wl-phone','err-wl-phone'); ok=false; } else this.clearError('wl-phone','err-wl-phone');
                 if (!this.isEmail(email))  { this.showError('wl-email','err-wl-email'); ok=false; } else this.clearError('wl-email','err-wl-email');
@@ -924,31 +945,33 @@
             }
         };
 
-        const UI = {
-            showModal(id){ document.getElementById(id).style.display='flex'; },
-            hideModal(id){ document.getElementById(id).style.display='none'; },
-            setBtnLoading(btn,loading,txt){ btn.disabled=loading; btn.innerHTML=loading?`<span class="btn-spinner"></span>處理中...`:txt; },
-            showResult({title,desc,icon}){
-                document.getElementById('modalTitle').innerText=title;
-                document.getElementById('modalDesc').innerHTML=desc;
-                document.getElementById('modalIcon').className=icon;
+        var UI = {
+            showModal: function(id){ document.getElementById(id).style.display='flex'; },
+            hideModal: function(id){ document.getElementById(id).style.display='none'; },
+            setBtnLoading: function(btn,loading,txt){ btn.disabled=loading; btn.innerHTML=loading?'<span class="btn-spinner"></span>處理中...':txt; },
+            showResult: function(o){
+                document.getElementById('modalTitle').innerText=o.title;
+                document.getElementById('modalDesc').innerHTML=o.desc;
+                document.getElementById('modalIcon').className=o.icon;
                 this.showModal('success-modal');
             },
-            showSyncIndicator(msg='🔄 資料已更新'){
-                const el=document.getElementById('config-sync-indicator');
+            showSyncIndicator: function(msg){
+                msg = msg || '🔄 資料已更新';
+                var el=document.getElementById('config-sync-indicator');
                 if(!el) return;
                 el.textContent=msg; el.classList.add('show');
                 clearTimeout(el._timer);
-                el._timer=setTimeout(()=>el.classList.remove('show'),3000);
+                el._timer=setTimeout(function(){el.classList.remove('show');},3000);
             },
-            showToast(msg, type='error'){
-                let toast=document.getElementById('ui-toast');
+            showToast: function(msg, type){
+                type = type || 'error';
+                var toast=document.getElementById('ui-toast');
                 if(!toast){
                     toast=document.createElement('div'); toast.id='ui-toast';
                     toast.style.cssText='position:fixed;bottom:calc(5rem + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(20px);z-index:9999;max-width:90vw;width:auto;padding:0.85rem 1.4rem;border-radius:1rem;font-size:0.78rem;line-height:1.6;letter-spacing:0.04em;text-align:center;pointer-events:none;opacity:0;transition:opacity 0.35s ease,transform 0.35s ease';
                     document.body.appendChild(toast);
                 }
-                const isErr=type==='error';
+                var isErr=type==='error';
                 toast.style.background=isErr?'rgba(30,10,10,0.97)':'rgba(13,12,11,0.97)';
                 toast.style.border=isErr?'1px solid rgba(139,0,0,0.5)':'1px solid rgba(212,183,143,0.3)';
                 toast.style.color=isErr?'#e06c6c':'#D4B78F';
@@ -956,153 +979,165 @@
                 toast.textContent=(isErr?'⚠ ':'✦ ')+msg;
                 toast.style.opacity='1'; toast.style.transform='translateX(-50%) translateY(0)';
                 clearTimeout(toast._timer);
-                toast._timer=setTimeout(()=>{toast.style.opacity='0';toast.style.transform='translateX(-50%) translateY(20px)';},5000);
+                toast._timer=setTimeout(function(){toast.style.opacity='0';toast.style.transform='translateX(-50%) translateY(20px)';},5000);
             }
         };
 
         // ════════════════════════════════════════════
-        // v7.2 修正：圖片載入（支援 Drive thumbnail + 自動 fallback）
+        // v7.3 修正：圖片載入
+        // 根本原因：舊版用 new Image() + crossOrigin="anonymous" 預測試
+        //   → Drive /thumbnail 不回傳 CORS header
+        //   → new Image() 的 onerror 被觸發 → 誤判為「載入失敗」
+        // 修正：直接設定 <img> 的 src，讓瀏覽器自己處理
+        //   → 不帶 crossorigin 屬性（純展示用不需要 CORS）
+        //   → img.onload / img.onerror 處理結果
+        //   → onerror 時才嘗試 /uc?export=view fallback
         // ════════════════════════════════════════════
         function loadCourseImage(rawUrl) {
-            const wrap=document.getElementById('course-image-wrap');
-            const img=document.getElementById('course-image');
-            const fallback=document.getElementById('course-image-fallback');
-            if (!wrap||!img||!fallback) return;
+            var wrap     = document.getElementById('course-image-wrap');
+            var img      = document.getElementById('course-image');
+            var fallback = document.getElementById('course-image-fallback');
+            if (!wrap || !img || !fallback) return;
 
-            const url = convertDriveUrl(rawUrl);
+            var url = convertDriveUrl(rawUrl);
             if (!url) {
                 wrap.classList.remove('img-loading');
-                img.style.display='none'; fallback.style.display='flex'; return;
+                img.style.display = 'none';
+                fallback.style.display = 'flex';
+                return;
             }
 
+            // 重置狀態
             wrap.classList.add('img-loading');
-            img.style.display='none'; img.style.opacity='0';
-            fallback.style.display='none';
+            img.style.display  = 'none';
+            img.style.opacity  = '0';
+            fallback.style.display = 'none';
+            // 移除舊的事件（防止重複綁定）
+            img.onload  = null;
+            img.onerror = null;
 
-            // v7.2：先試 thumbnail，失敗再試 /uc?export=view（舊版 fallback）
-            function tryLoad(src, isFallbackAttempt) {
-                const t = new Image();
-                t.crossOrigin = 'anonymous';
-                t.referrerPolicy = 'no-referrer';
-                t.onload = () => {
-                    img.src = src;
-                    img.style.display = 'block';
-                    wrap.classList.remove('img-loading');
-                    requestAnimationFrame(() => { img.style.opacity = '1'; });
-                };
-                t.onerror = () => {
-                    if (!isFallbackAttempt && src.indexOf('/thumbnail') >= 0) {
-                        // thumbnail 失敗 → 試舊 /uc 格式
-                        const idMatch = src.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-                        if (idMatch) {
-                            tryLoad(`https://drive.google.com/uc?export=view&id=${idMatch[1]}`, true);
-                            return;
-                        }
-                    }
-                    wrap.classList.remove('img-loading');
-                    img.style.display = 'none';
-                    fallback.style.display = 'flex';
-                    fallback.innerHTML = `
-                        <span style="font-size:1.5rem">🔒</span>
-                        <span style="color:#5C5547;font-size:0.75rem;">圖片載入失敗</span>
-                        <span style="display:inline-flex;align-items:center;gap:0.35rem;font-size:0.7rem;letter-spacing:0.08em;color:#3A3225;background:rgba(22,20,18,0.8);border:1px solid rgba(42,37,27,0.8);border-radius:9999px;padding:0.2rem 0.6rem;margin-top:0.4rem;">
-                            請確認 Drive 圖片已設為「公開」
-                        </span>`;
-                    console.warn('[圖片] 載入失敗，請確認：\n1. 圖片已設定「知道連結的任何人皆可檢視」\n2. URL 格式正確\nURL：', src);
-                };
-                t.src = src;
+            function onSuccess() {
+                wrap.classList.remove('img-loading');
+                img.style.display = 'block';
+                // 強制 repaint 後再做 fade-in
+                requestAnimationFrame(function() {
+                    requestAnimationFrame(function() {
+                        img.style.opacity = '1';
+                    });
+                });
             }
-            tryLoad(url, false);
+
+            function onFail(triedUrl) {
+                // thumbnail 失敗 → 嘗試 /uc?export=view（舊版 fallback）
+                if (triedUrl.indexOf('/thumbnail') >= 0) {
+                    var m = triedUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+                    if (m && m[1]) {
+                        var ucUrl = 'https://drive.google.com/uc?export=view&id=' + m[1];
+                        img.onload  = onSuccess;
+                        img.onerror = function() { showImgError(ucUrl); };
+                        img.src     = ucUrl;
+                        return;
+                    }
+                }
+                showImgError(triedUrl);
+            }
+
+            function showImgError(failedUrl) {
+                wrap.classList.remove('img-loading');
+                img.style.display      = 'none';
+                fallback.style.display = 'flex';
+                fallback.innerHTML = '<span style="font-size:1.5rem">🔒</span>'
+                    + '<span style="color:#5C5547;font-size:0.75rem;">圖片載入失敗</span>'
+                    + '<span style="display:inline-flex;align-items:center;gap:0.35rem;font-size:0.7rem;letter-spacing:0.08em;color:#3A3225;background:rgba(22,20,18,0.8);border:1px solid rgba(42,37,27,0.8);border-radius:9999px;padding:0.2rem 0.6rem;margin-top:0.4rem;">'
+                    + '請確認 Drive 圖片已設為「公開」</span>';
+                console.warn('[圖片] 載入失敗。\n確認步驟：\n1. Google Drive → 右鍵圖片 → 共用 → 「知道連結的任何人皆可檢視」\n2. config 表格 COURSE_IMAGE 欄填入分享連結（/file/d/... 格式）\nURL：', failedUrl);
+            }
+
+            img.onload  = onSuccess;
+            img.onerror = function() { onFail(url); };
+            img.src     = url;
         }
 
         function loadStudentImg(id, rawUrl) {
-            const el = document.getElementById(id);
+            var el = document.getElementById(id);
             if (!el || !rawUrl) return;
-            const url = convertDriveUrl(rawUrl);
+            var url = convertDriveUrl(rawUrl);
             if (!url) return;
-            const t = new Image();
-            t.crossOrigin = 'anonymous';
-            t.referrerPolicy = 'no-referrer';
-            t.onload = () => { el.src = url; };
-            t.src = url;
+            // 直接設定 src，讓瀏覽器自行處理，失敗時保留預設 Unsplash 圖
+            var prevSrc = el.src;
+            el.onerror = function() { el.src = prevSrc; el.onerror = null; };
+            el.src = url;
         }
 
         // ════════════════════════════════════════════
-        // v7.2 修正：Api — JSONP 優先策略
-        // 根本原因：GAS doGet 部署後，fetch() 會遇到 302 redirect，
-        // redirect 目標（script.googleusercontent.com）缺乏 CORS header
-        // JSONP 直接用 <script> 注入，完全繞過 CORS 限制
+        // Api — JSONP 優先策略
         // ════════════════════════════════════════════
-        const Api = {
-            _jsonp(bust) {
-                return new Promise((resolve, reject) => {
-                    const cbName = `__gas_cb_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-                    const script = document.createElement('script');
-                    const timer  = setTimeout(() => { cleanup(); reject(new Error('JSONP timeout')); }, 12000);
+        var Api = {
+            _jsonp: function(bust) {
+                return new Promise(function(resolve, reject) {
+                    var cbName = '__gas_cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+                    var script = document.createElement('script');
+                    var timer  = setTimeout(function() { cleanup(); reject(new Error('JSONP timeout')); }, 12000);
                     function cleanup() {
                         clearTimeout(timer);
                         delete window[cbName];
-                        script.parentNode?.removeChild(script);
+                        if (script.parentNode) script.parentNode.removeChild(script);
                     }
-                    window[cbName] = (data) => {
+                    window[cbName] = function(data) {
                         cleanup();
-                        if (data?.result === 'error') { reject(new Error('GAS: ' + data.message)); return; }
+                        if (data && data.result === 'error') { reject(new Error('GAS: ' + data.message)); return; }
                         resolve(data);
                     };
-                    script.onerror = () => { cleanup(); reject(new Error('JSONP script load failed')); };
-                    const bustStr = bust ? `&bust=${bust}` : '';
-                    script.src = `${CONFIG.scriptURL}?action=${CONFIG.actions.CHECK_FULL}&callback=${cbName}${bustStr}&_=${Date.now()}`;
+                    script.onerror = function() { cleanup(); reject(new Error('JSONP script load failed')); };
+                    var bustStr = bust ? '&bust=' + bust : '';
+                    script.src = CONFIG.scriptURL + '?action=' + CONFIG.actions.CHECK_FULL + '&callback=' + cbName + bustStr + '&_=' + Date.now();
                     document.head.appendChild(script);
                 });
             },
-            async _fetchFallback(bust) {
-                const url = `${CONFIG.scriptURL}?action=${CONFIG.actions.CHECK_FULL}${bust ? `&bust=${bust}` : ''}&_=${Date.now()}`;
-                const ctrl = new AbortController();
-                const timeout = setTimeout(() => ctrl.abort(), 8000);
-                try {
-                    const res = await fetch(url, { redirect:'follow', cache:'no-cache', signal:ctrl.signal });
+            _fetchFallback: function(bust) {
+                var url = CONFIG.scriptURL + '?action=' + CONFIG.actions.CHECK_FULL + (bust ? '&bust=' + bust : '') + '&_=' + Date.now();
+                var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                var timeout = setTimeout(function() { if (ctrl) ctrl.abort(); }, 8000);
+                var fetchOpts = { redirect:'follow', cache:'no-cache' };
+                if (ctrl) fetchOpts.signal = ctrl.signal;
+                return fetch(url, fetchOpts).then(function(res) {
                     clearTimeout(timeout);
-                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    const data = await res.json();
-                    if (data?.result === 'error') throw new Error('GAS: ' + data.message);
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return res.json();
+                }).then(function(data) {
+                    if (data && data.result === 'error') throw new Error('GAS: ' + data.message);
                     return data;
-                } finally { clearTimeout(timeout); }
+                }).catch(function(err) { clearTimeout(timeout); throw err; });
             },
-            async checkFull(forceRefresh = false) {
+            checkFull: function(forceRefresh) {
                 if (!forceRefresh) {
-                    const cached = getLocalCache();
-                    if (cached) return cached;
+                    var cached = getLocalCache();
+                    if (cached) return Promise.resolve(cached);
                 }
-                const bust = forceRefresh ? Date.now() : null;
-                let data;
+                var bust = forceRefresh ? Date.now() : null;
+                var self = this;
                 if (CONFIG.PREFER_JSONP) {
-                    // JSONP 優先（解決 GAS CORS redirect 問題）
-                    try {
-                        data = await this._jsonp(bust);
-                    } catch(jsonpErr) {
+                    return self._jsonp(bust).catch(function(jsonpErr) {
                         console.warn('[Api] JSONP failed, trying fetch:', jsonpErr.message);
-                        data = await this._fetchFallback(bust);
-                    }
+                        return self._fetchFallback(bust);
+                    }).then(function(data) { setLocalCache(data); return data; });
                 } else {
-                    try {
-                        data = await this._fetchFallback(bust);
-                    } catch(fetchErr) {
+                    return self._fetchFallback(bust).catch(function(fetchErr) {
                         console.warn('[Api] fetch failed, trying JSONP:', fetchErr.message);
-                        data = await this._jsonp(bust);
-                    }
+                        return self._jsonp(bust);
+                    }).then(function(data) { setLocalCache(data); return data; });
                 }
-                setLocalCache(data);
-                return data;
             },
-            async post(fd) {
-                const ctrl = new AbortController();
-                const timeout = setTimeout(() => ctrl.abort(), 15000);
-                try {
-                    const res = await fetch(CONFIG.scriptURL, { method:'POST', body:fd, redirect:'follow', signal:ctrl.signal });
+            post: function(fd) {
+                var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                var timeout = setTimeout(function() { if (ctrl) ctrl.abort(); }, 15000);
+                var fetchOpts = { method:'POST', body:fd, redirect:'follow' };
+                if (ctrl) fetchOpts.signal = ctrl.signal;
+                return fetch(CONFIG.scriptURL, fetchOpts).then(function(res) {
                     clearTimeout(timeout);
-                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    return await res.json();
-                } finally { clearTimeout(timeout); }
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return res.json();
+                }).catch(function(err) { clearTimeout(timeout); throw err; });
             }
         };
 
@@ -1113,20 +1148,20 @@
             } catch(e) {}
         }
 
-        let cachedMaxSeats = 10;
+        var cachedMaxSeats = 10;
         function updateSeatsUI(remaining, maxSeats) {
             cachedMaxSeats = maxSeats || cachedMaxSeats;
-            const used = cachedMaxSeats - remaining;
-            const pct  = Math.min(100, Math.round((used/cachedMaxSeats)*100));
-            const bar  = document.getElementById('seats-bar-fill');
+            var used = cachedMaxSeats - remaining;
+            var pct  = Math.min(100, Math.round((used/cachedMaxSeats)*100));
+            var bar  = document.getElementById('seats-bar-fill');
             if (bar) bar.style.width = pct + '%';
-            const almostFull = document.getElementById('seats-almost-full');
+            var almostFull = document.getElementById('seats-almost-full');
             if (almostFull) {
                 remaining > 0 && remaining <= CONFIG.URGENCY_THRESHOLD
                     ? almostFull.classList.remove('hidden')
                     : almostFull.classList.add('hidden');
             }
-            const urgencyBar = document.getElementById('urgency-bar');
+            var urgencyBar = document.getElementById('urgency-bar');
             if (urgencyBar) {
                 if (remaining <= 0) urgencyBar.classList.remove('show');
                 else if (remaining <= CONFIG.URGENCY_THRESHOLD) urgencyBar.classList.add('show');
@@ -1135,30 +1170,31 @@
         }
 
         function checkAndRefreshSessionForNewCourse(courseDate) {
-            const stored = sessionStorage.getItem('reg_course_date');
+            var stored = sessionStorage.getItem('reg_course_date');
             if (stored && stored !== courseDate) sessionStorage.removeItem('reg_submitted');
             sessionStorage.setItem('reg_course_date', courseDate);
         }
 
         // ════════════════════════════════════════════
-        // v7.2：API prefetch — 在 DOMContentLoaded 之前就開始請求
-        // 使用 JSONP，不需等 DOM ready
+        // v7.3：利用 head 的 prefetch 結果
+        // window.__gasPrefetchData 由 <head> 中的 inline script 注入
         // ════════════════════════════════════════════
-        let _prefetchPromise = null;
-        const _scriptUrlOk = CONFIG.scriptURL && !CONFIG.scriptURL.includes('YOUR_') && CONFIG.scriptURL.length > 50;
-        if (_scriptUrlOk) {
-            // 立即 prefetch，不等 DOMContentLoaded
-            _prefetchPromise = Api.checkFull(false).catch(() => null);
+        var _prefetchUsed = false;
+        function getPrefetchData() {
+            if (!_prefetchUsed && window.__gasPrefetchData) {
+                _prefetchUsed = true;
+                return Promise.resolve(window.__gasPrefetchData);
+            }
+            return null;
         }
 
-        // applyData
-        let _lastAppliedVersion = 0;
-        function applyData(data, isPolling = false) {
+        var _lastAppliedVersion = 0;
+        function applyData(data, isPolling) {
             if (!data || typeof data !== 'object') return;
-            const remaining = data.remaining ?? 0;
-            const maxSeats  = Number(data.maxSeats || cachedMaxSeats);
-            const dataVersion = data._v || 0;
-            const isNewData   = dataVersion > _lastAppliedVersion;
+            var remaining   = data.remaining != null ? data.remaining : 0;
+            var maxSeats    = Number(data.maxSeats || cachedMaxSeats);
+            var dataVersion = data._v || 0;
+            var isNewData   = dataVersion > _lastAppliedVersion;
             if (isNewData && isPolling && _lastAppliedVersion > 0) {
                 applyCourseInfo(data);
                 UI.showSyncIndicator('🔄 課程資訊已更新');
@@ -1168,7 +1204,7 @@
             if (data.courseDate) checkAndRefreshSessionForNewCourse(data.courseDate);
             if (data.isFull && maxSeats >= CONFIG.FUSE_THRESHOLD && remaining === 0) {
                 document.getElementById('closed-overlay').classList.add('show');
-                const btn = document.getElementById('submitBtn');
+                var btn = document.getElementById('submitBtn');
                 if (btn) btn.disabled = true;
                 return;
             }
@@ -1176,8 +1212,8 @@
                 if (!isPolling) {
                     UI.showModal('full-modal');
                 } else {
-                    const btn = document.getElementById('submitBtn');
-                    if (btn) { btn.textContent='🌸 登記候補・優先通知'; btn.onclick=(e)=>{e.preventDefault();UI.showModal('full-modal');}; }
+                    var btn2 = document.getElementById('submitBtn');
+                    if (btn2) { btn2.textContent='🌸 登記候補・優先通知'; btn2.onclick=function(e){e.preventDefault();UI.showModal('full-modal');}; }
                     if (document.getElementById('full-modal').style.display !== 'flex') {
                         document.getElementById('full-modal-title').textContent = '名額已在您填寫時搶完了 🌸';
                         UI.showModal('full-modal');
@@ -1185,23 +1221,22 @@
                 }
                 return;
             }
-            const btn = document.getElementById('submitBtn');
-            if (btn) { btn.textContent='確認提交報名'; btn.onclick=null; }
+            var btn3 = document.getElementById('submitBtn');
+            if (btn3) { btn3.textContent='確認提交報名'; btn3.onclick=null; }
         }
 
-        // applyCourseInfo
         function applyCourseInfo(data) {
-            const setEl = (id, val) => { const el=document.getElementById(id); if(el && val!=null) el.textContent=val; };
-            const courseText = `${data.courseName}｜${data.courseDate}｜${data.coursePrice}`;
-            const display=document.getElementById('course-display'), hidden=document.getElementById('hidden-course');
+            function setEl(id, val) { var el=document.getElementById(id); if(el && val!=null) el.textContent=val; }
+            var courseText = (data.courseName||'') + '｜' + (data.courseDate||'') + '｜' + (data.coursePrice||'');
+            var display=document.getElementById('course-display'), hidden=document.getElementById('hidden-course');
             if (display) display.textContent = courseText;
             if (hidden)  hidden.value = courseText;
-            const heroTitle=document.getElementById('hero-title'), heroTagline=document.getElementById('hero-tagline');
-            if (heroTitle && data.courseName)   heroTitle.textContent   = data.courseName;
-            if (heroTagline && data.heroTagline) heroTagline.textContent = data.heroTagline;
+            var heroTitle=document.getElementById('hero-title'), heroTagline=document.getElementById('hero-tagline');
+            if (heroTitle   && data.courseName)   heroTitle.textContent   = data.courseName;
+            if (heroTagline && data.heroTagline)   heroTagline.textContent = data.heroTagline;
             if (data.heroBgImage) {
-                const heroBg=document.getElementById('hero-bg');
-                if (heroBg) heroBg.style.backgroundImage = `url('${convertDriveUrl(data.heroBgImage)}')`;
+                var heroBg=document.getElementById('hero-bg');
+                if (heroBg) heroBg.style.backgroundImage = "url('" + convertDriveUrl(data.heroBgImage) + "')";
             }
             setEl('course-card-title',          data.courseName);
             setEl('course-card-date',           data.courseDate);
@@ -1209,15 +1244,19 @@
             setEl('course-card-sub',            data.courseSubtitle || '小班制精緻教學・材料全含・當天完成作品');
             setEl('course-card-badge',          data.courseBadge   || '零基礎手作課程');
             setEl('course-card-original-price', data.courseOriginalPrice || '');
-            // v7.2 圖片載入
+
+            // v7.3 圖片載入（直接設定 src，不用 new Image() 預測試）
             if (data.courseImage) {
                 loadCourseImage(data.courseImage);
             } else {
-                const wrap=document.getElementById('course-image-wrap'), img=document.getElementById('course-image'), fallback=document.getElementById('course-image-fallback');
+                var wrap=document.getElementById('course-image-wrap'),
+                    img=document.getElementById('course-image'),
+                    fallback=document.getElementById('course-image-fallback');
                 if (wrap) wrap.classList.remove('img-loading');
                 if (img) img.style.display='none';
                 if (fallback) fallback.style.display='flex';
             }
+
             setEl('proof-headline', data.proofHeadline);
             setEl('proof-body',     data.proofBody);
             setEl('stat1-num',      data.proofStat1Num);
@@ -1231,112 +1270,106 @@
             setEl('student-caption-1', data.studentImg1Caption);
             setEl('student-caption-2', data.studentImg2Caption);
             if (data.lineId && /^@[\w.-]+$/.test(data.lineId)) {
-                document.querySelectorAll('.line-add-friend').forEach(a => { a.href=`https://line.me/R/ti/p/${data.lineId}`; });
-                document.querySelectorAll('.line-id-text').forEach(el => { el.textContent=data.lineId; });
-                document.querySelectorAll('.line-name-text').forEach(el => { el.textContent=data.lineName||'御景家 YUJINGJIA'; });
+                document.querySelectorAll('.line-add-friend').forEach(function(a) { a.href='https://line.me/R/ti/p/'+data.lineId; });
+                document.querySelectorAll('.line-id-text').forEach(function(el) { el.textContent=data.lineId; });
+                document.querySelectorAll('.line-name-text').forEach(function(el) { el.textContent=data.lineName||'御景家 YUJINGJIA'; });
             }
-            const sw=document.getElementById('section-student-works');
+            var sw=document.getElementById('section-student-works');
             if (sw) {
                 data.showStudentWorks===true ? sw.classList.remove('section-hidden') : sw.classList.add('section-hidden');
             }
         }
 
         // 背景輪詢
-        let isFirstLoad = true;
-        async function pollStatus() {
-            try {
-                invalidateLocalCache();
-                const data = await Api.checkFull(false);
+        var isFirstLoad = true;
+        function pollStatus() {
+            invalidateLocalCache();
+            Api.checkFull(false).then(function(data) {
                 if (!isFirstLoad) applyData(data, true);
-            } catch(e) { console.warn('[poll]', e.message); }
+            }).catch(function(e) { console.warn('[poll]', e.message); });
         }
         function startPolling() { setInterval(pollStatus, CONFIG.POLL_INTERVAL); }
 
-        ['reg-name','reg-phone','reg-email'].forEach(id => {
-            document.getElementById(id)?.addEventListener('focus', () => {
+        ['reg-name','reg-phone','reg-email'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.addEventListener('focus', function() {
                 if (!isFirstLoad) { invalidateLocalCache(); pollStatus(); }
             }, {passive:true});
         });
 
         // ── 初始化 ──
-        window.addEventListener('DOMContentLoaded', async () => {
+        window.addEventListener('DOMContentLoaded', function() {
             parseUTM();
 
+            var _scriptUrlOk = CONFIG.scriptURL && CONFIG.scriptURL.indexOf('YOUR_') < 0 && CONFIG.scriptURL.length > 50;
             if (!_scriptUrlOk) {
                 revealUI(); isFirstLoad = false;
-                const display=document.getElementById('course-display');
+                var display=document.getElementById('course-display');
                 if (display) { display.textContent='⚠️ 請在 HTML 的 CONFIG.scriptURL 填入您的 GAS 部署網址'; display.style.color='#c0392b'; }
                 return;
             }
 
-            // v7.2：最多 2 次重試（JSONP 已大幅提升成功率，不需 3 次）
-            async function initWithRetry(maxRetry = 2, delay = 2500) {
-                for (let attempt = 1; attempt <= maxRetry; attempt++) {
-                    try {
-                        const data = (attempt === 1 && _prefetchPromise)
-                            ? (await _prefetchPromise) || await Api.checkFull(false)
-                            : await Api.checkFull(true); // 第二次強制刷新
-
+            function initWithRetry(maxRetry, delay) {
+                maxRetry = maxRetry || 2; delay = delay || 2500;
+                var attempt = 0;
+                function tryOnce() {
+                    attempt++;
+                    // 第一次優先用 head prefetch 結果
+                    var p = (attempt === 1) ? (getPrefetchData() || Api.checkFull(false)) : Api.checkFull(true);
+                    p.then(function(data) {
                         applyCourseInfo(data);
                         revealUI();
                         isFirstLoad = false;
                         applyData(data, false);
                         startPolling();
-                        return;
-                    } catch(err) {
-                        console.warn(`[init] attempt ${attempt}/${maxRetry}:`, err.message);
+                    }).catch(function(err) {
+                        console.warn('[init] attempt ' + attempt + '/' + maxRetry + ':', err.message);
                         if (attempt < maxRetry) {
-                            // 顯示「載入中」提示，不要讓用戶看到骨架屏
                             revealUI();
-                            const display=document.getElementById('course-display');
-                            if (display) { display.textContent='課程資訊載入中，請稍候…'; display.style.color='#A39171'; }
-                            await new Promise(r => setTimeout(r, delay));
+                            var d=document.getElementById('course-display');
+                            if (d) { d.textContent='課程資訊載入中，請稍候…'; d.style.color='#A39171'; }
+                            setTimeout(tryOnce, delay);
                         } else {
                             revealUI(); isFirstLoad = false;
-                            const display=document.getElementById('course-display');
-                            if (display) { display.textContent='課程資訊載入中，請稍候…'; display.style.color='#A39171'; }
+                            var d=document.getElementById('course-display');
+                            if (d) { d.textContent='課程資訊載入中，請稍候…'; d.style.color='#A39171'; }
                             // 背景靜默重試（8 秒後）
-                            setTimeout(async () => {
-                                try {
-                                    invalidateLocalCache();
-                                    const data = await Api.checkFull(true);
+                            setTimeout(function() {
+                                invalidateLocalCache();
+                                Api.checkFull(true).then(function(data) {
                                     applyCourseInfo(data);
                                     applyData(data, false);
                                     startPolling();
-                                    const d=document.getElementById('course-display');
-                                    if (d) d.style.color = '';
-                                } catch(e2) {
-                                    const d=document.getElementById('course-display');
-                                    if (d) {
-                                        d.textContent='課程資訊暫時無法載入，請重新整理頁面';
-                                        d.style.color='#c0392b';
-                                    }
-                                    console.error('[init] 所有重試均失敗。\n最常見原因：\n1. scriptURL 未更新（舊帳號或舊版本的 URL）\n2. GAS 尚未部署或部署設定為「僅自己」\n解法：GAS → 部署 → 管理部署 → 建立新版本 → 將存取權設為「任何人」→ 複製 URL → 貼入 index.html CONFIG.scriptURL');
-                                }
+                                    var d2=document.getElementById('course-display');
+                                    if (d2) d2.style.color = '';
+                                }).catch(function() {
+                                    var d2=document.getElementById('course-display');
+                                    if (d2) { d2.textContent='課程資訊暫時無法載入，請重新整理頁面'; d2.style.color='#c0392b'; }
+                                });
                             }, 8000);
                         }
-                    }
+                    });
                 }
+                tryOnce();
             }
 
             initWithRetry();
         });
 
-        window.closeFullModal = () => UI.hideModal('full-modal');
+        window.closeFullModal = function() { UI.hideModal('full-modal'); };
 
         // ── 候補送出 ──
-        const waitlistForm=document.getElementById('waitlistForm'), waitlistBtn=document.getElementById('waitlistBtn');
-        let waitlistSubmitting = false;
-        waitlistForm.addEventListener('submit', async (e) => {
+        var waitlistForm=document.getElementById('waitlistForm'), waitlistBtn=document.getElementById('waitlistBtn');
+        var waitlistSubmitting = false;
+        waitlistForm.addEventListener('submit', function(e) {
             e.preventDefault();
             if (waitlistSubmitting) return;
             if (!Validator.validateWaitlistForm()) return;
             waitlistSubmitting = true;
             UI.setBtnLoading(waitlistBtn, true, '🌸 保留候補資格・優先通知我');
-            const fd = new FormData(waitlistForm);
+            var fd = new FormData(waitlistForm);
             fd.append('action', CONFIG.actions.WAITLIST);
-            try {
-                const res = await Api.post(fd);
+            Api.post(fd).then(function(res) {
                 if (res.result === 'duplicate') {
                     UI.showToast('您的電話或 Email 已登記過本場次候補，無需重複登記。', 'info');
                     UI.setBtnLoading(waitlistBtn, false, '🌸 保留候補資格・優先通知我');
@@ -1350,16 +1383,16 @@
                     icon:'fa-solid fa-envelope-open-text text-[#12110F] text-2xl'
                 });
                 waitlistForm.reset();
-            } catch(err) {
+            }).catch(function(err) {
                 console.error('[waitlist]', err.message);
                 UI.showToast('目前系統繁忙，請稍後再試或加入官方 LINE 聯繫', 'error');
                 UI.setBtnLoading(waitlistBtn, false, '🌸 保留候補資格・優先通知我');
-            } finally { waitlistSubmitting = false; }
+            }).finally(function() { waitlistSubmitting = false; });
         });
 
         // ── 正式報名送出 ──
-        const bookingForm=document.getElementById('bookingForm'), submitBtn=document.getElementById('submitBtn');
-        let regSubmitting = false;
+        var bookingForm=document.getElementById('bookingForm'), submitBtn=document.getElementById('submitBtn');
+        var regSubmitting = false;
 
         function getSubmittedKey(email, courseDate) {
             return 'submitted_'+(courseDate||'').replace(/\s/g,'')+'_'+(email||'').toLowerCase().replace(/[^a-z0-9]/g,'_');
@@ -1367,22 +1400,21 @@
         function markSubmitted(email, courseDate) { try { sessionStorage.setItem(getSubmittedKey(email,courseDate),'1'); } catch(e) {} }
         function isAlreadySubmitted(email, courseDate) { try { return sessionStorage.getItem(getSubmittedKey(email,courseDate))==='1'; } catch(e) { return false; } }
 
-        bookingForm.addEventListener('submit', async (e) => {
+        bookingForm.addEventListener('submit', function(e) {
             e.preventDefault();
             if (regSubmitting) return;
             if (!Validator.validateRegForm()) return;
-            const emailVal=(document.getElementById('reg-email')?.value||'').trim().toLowerCase();
-            const courseKey=sessionStorage.getItem('reg_course_date')||'';
+            var emailVal=(document.getElementById('reg-email')&&document.getElementById('reg-email').value||'').trim().toLowerCase();
+            var courseKey=sessionStorage.getItem('reg_course_date')||'';
             if (isAlreadySubmitted(emailVal, courseKey)) {
                 UI.showToast('此 Email 已送出過本場次報名。如需更改資料請加入官方 LINE 聯繫。', 'info');
                 return;
             }
             regSubmitting = true;
             UI.setBtnLoading(submitBtn, true, '確認提交報名');
-            const fd = new FormData(bookingForm);
+            var fd = new FormData(bookingForm);
             fd.append('action', CONFIG.actions.REGISTER);
-            try {
-                const data = await Api.post(fd);
+            Api.post(fd).then(function(data) {
                 if (data.result === 'duplicate') {
                     UI.showToast('您的電話或 Email 已報名過本場次，請勿重複報名。如有疑問請加入官方 LINE 聯繫。', 'info');
                     UI.setBtnLoading(submitBtn, false, '確認提交報名'); return;
@@ -1404,24 +1436,26 @@
                     fireLeadEvent('正取');
                     UI.showResult({ title:'報名正式成功 🎉', desc:'<p class="text-center">恭喜您！席次已為您保留。<br>確認信已寄至您的信箱，請查收。<br><br>請於課程當天攜帶現金至現場繳費，<br>我們非常期待與您相見 🌸</p>', icon:'fa-solid fa-check text-[#12110F] text-2xl' });
                 }
-            } catch(err) {
+            }).catch(function(err) {
                 console.error('[register]', err.message);
                 UI.showToast('目前系統繁忙，請稍後再試或加入官方 LINE 聯繫','error');
                 UI.setBtnLoading(submitBtn, false, '確認提交報名');
-            } finally { regSubmitting = false; }
+            }).finally(function() { regSubmitting = false; });
         });
 
         // ── Sticky Bottom CTA ──
-        (() => {
-            const stickyCta=document.getElementById('sticky-cta'), formPanel=document.querySelector('.glass-panel');
+        (function() {
+            var stickyCta=document.getElementById('sticky-cta'), formPanel=document.querySelector('.glass-panel');
             if (!stickyCta||!formPanel) return;
-            let formVisible=false, scrolledOver=false;
+            var formVisible=false, scrolledOver=false;
             function updateCTA() {
                 scrolledOver && !formVisible ? stickyCta.classList.remove('translate-y-full') : stickyCta.classList.add('translate-y-full');
             }
-            const observer=new IntersectionObserver((entries)=>{ entries.forEach(en=>{formVisible=en.isIntersecting;updateCTA();}); },{threshold:0.05});
+            var observer=new IntersectionObserver(function(entries){
+                entries.forEach(function(en){ formVisible=en.isIntersecting; updateCTA(); });
+            },{threshold:0.05});
             observer.observe(formPanel);
-            window.addEventListener('scroll',()=>{ scrolledOver=window.scrollY>200; updateCTA(); },{passive:true});
+            window.addEventListener('scroll',function(){ scrolledOver=window.scrollY>200; updateCTA(); },{passive:true});
         })();
 
     })();
