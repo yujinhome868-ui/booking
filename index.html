@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<!-- index_v13.html — 修正：
-     問題1(sessionStorage鎖改為email+場次組合key，換資料可重新報名)
-     問題2(Sticky CTA改觀察整個表單面板，滑到表單就消失)
-     問題3(圖片規格標注：課程卡1200×675/16:9、學員作品600×750/4:5，object-center防偏移)
+<!-- index_v15.html — v7修正：
+     需求一(通知範本設定工作表)
+     需求二(開課前2天提醒+取消暖心信+LINE Messaging API)
+     需求三(學員作品區塊隱藏：section-student-works hidden class，由GAS SHOW_STUDENT_WORKS控制)
+     廣告合規修正
 -->
 <html lang="zh-TW">
 <head>
@@ -23,17 +24,21 @@
     <meta property="og:image" content="https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&q=80&w=1200">
     <!-- 建議換成自有圖片（1200×630px）以確保 FB/IG 廣告預覽圖正確顯示 -->
 
+    <!-- canonical：廣告平台合規必備 -->
+    <link rel="canonical" href=""><!-- 由 JS 自動填入 -->
+
     <!-- 廣告安全：Referrer Policy -->
     <meta name="referrer" content="origin-when-cross-origin">
 
-    <!-- Content Security Policy -->
+    <!-- Content Security Policy（v14：放寬 script-src 支援廣告像素 + GAS redirect） -->
     <meta http-equiv="Content-Security-Policy"
           content="default-src 'self' https:;
-                   script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://connect.facebook.net https://analytics.tiktok.com;
+                   script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://connect.facebook.net https://analytics.tiktok.com https://www.googletagmanager.com;
                    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com;
                    font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com;
-                   img-src 'self' data: https:;
-                   connect-src 'self' https://script.google.com https://script.googleusercontent.com;">
+                   img-src 'self' data: https: blob:;
+                   connect-src 'self' https://script.google.com https://script.googleusercontent.com https://www.facebook.com https://analytics.tiktok.com;
+                   frame-src https://www.facebook.com;">
 
     <!-- FB 域名驗證（取得驗證碼後取消註解並填入）
     <meta name="facebook-domain-verification" content="填入你的驗證碼"> -->
@@ -334,6 +339,21 @@
         /* 只對真正動畫的元素標記，避免過多合成層佔記憶體 */
         .btn-gold:not(:disabled) { will-change: transform; }
         .seats-bar-fill { will-change: width; }
+
+        /* ─── 需求三：區塊隱藏控制 ─── */
+        /* 使用方式：
+           隱藏：在元素加上 class="section-hidden"
+           顯示：移除 class，或在 config 設定 SHOW_STUDENT_WORKS=true
+           ⚠️ 不要刪除 HTML，只加/移除 class 即可一鍵切換 */
+        .section-hidden { display: none !important; }
+
+        /* ─── 圖片說明浮層 ─── */
+        .img-guide-badge {
+            display: inline-flex; align-items: center; gap: 0.35rem;
+            font-size: 0.7rem; letter-spacing: 0.08em; color: #5C5547;
+            background: rgba(22,20,18,0.8); border: 1px solid rgba(42,37,27,0.8);
+            border-radius: 9999px; padding: 0.2rem 0.6rem; margin-top: 0.4rem;
+        }
     </style>
 </head>
 
@@ -399,8 +419,15 @@
         </div>
 
         <!-- ═══ 課程卡片實體 ═══ -->
-        <!-- 📐 課程主圖建議尺寸：1200×675px（16:9）
-             任何 16:9 的圖片皆可，object-fit:cover 自動裁切填滿，不變形 -->
+        <!--
+        📸 課程主圖更換方式（完全免費，在 Google 試算表 config 分頁操作）：
+           ① 把圖片上傳到 Google 雲端硬碟（drive.google.com）
+           ② 右鍵圖片 → 共用 → 一般存取改成「知道連結的任何人」→ 檢視者 → 完成
+           ③ 複製分享連結，取出 ID（連結格式：.../file/d/【這段是ID】/view）
+           ④ 組成：https://drive.google.com/uc?export=view&id=【貼入ID】
+           ⑤ 將上面網址貼入 config 分頁的 COURSE_IMAGE 欄
+           ✅ 建議尺寸：1200 × 675 px（16:9 橫式），任何 16:9 皆可自動裁切
+        -->
         <div id="course-card" class="rounded-2xl overflow-hidden mb-3 shadow-lg"
              style="display:none;background:rgba(22,20,18,0.75);border:1px solid rgba(42,37,27,0.9);">
 
@@ -409,9 +436,10 @@
                      class="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 hover:scale-105"
                      style="display:block;">
                 <div id="course-image-fallback"
-                     class="absolute inset-0 flex items-center justify-center"
+                     class="absolute inset-0 flex flex-col items-center justify-center gap-2"
                      style="background:linear-gradient(135deg,#1a1814 0%,#2A251B 100%);">
-                    <span class="text-[#3A3225] text-xs tracking-widest">課程圖片載入中</span>
+                    <span class="text-[#3A3225] text-xs tracking-widest">尚未設定課程圖片</span>
+                    <span class="img-guide-badge">📸 在 config 填入 COURSE_IMAGE 網址</span>
                 </div>
                 <div class="absolute bottom-3 left-3 z-10">
                     <span id="course-card-badge" class="px-2.5 py-1 rounded-full text-xs tracking-wider text-[#D4B78F]"
@@ -516,10 +544,22 @@
         </div>
 
         <!-- ═══ 零基礎學員實作圖片展示 ═══ -->
-        <!-- 📐 學員作品圖建議尺寸：600×750px（4:5 直式）
-             任何接近 4:5（直式）的圖片皆可，object-fit:cover 自動裁切，主體置中
-             → 在 config 分頁 STUDENT_IMG1 / STUDENT_IMG2 填入圖片的公開 https 連結即可更換 -->
-        <div class="mb-6 animate-fadeInUp" style="animation-delay:0.15s;">
+        <!--
+        📸 學員作品圖更換方式（同課程主圖，在 config 填 STUDENT_IMG1 / STUDENT_IMG2）：
+           ① 上傳圖片至 Google 雲端硬碟 → 設定「任何人知道連結即可檢視」
+           ② 取出 ID → 組成：https://drive.google.com/uc?export=view&id=【ID】
+           ③ 貼入 config 分頁的 STUDENT_IMG1 或 STUDENT_IMG2 欄
+           ✅ 建議尺寸：600 × 750 px（4:5 直式），任何直式照片皆可自動裁切
+           ✅ 同時可在 STUDENT_IMG1_CAPTION / STUDENT_IMG2_CAPTION 欄修改圖片說明文字
+
+        🔐 顯示 / 隱藏控制（需求三）：
+           方法 A：在 config 分頁設定 SHOW_STUDENT_WORKS = true / false（前端自動套用）
+           方法 B：手動移除或加回下方 div 的 class="section-hidden" 即可切換
+                   → 隱藏：<div id="section-student-works" class="mb-6 animate-fadeInUp section-hidden">
+                   → 顯示：<div id="section-student-works" class="mb-6 animate-fadeInUp">
+        -->
+        <!-- 預設 section-hidden：沒有學員作品時先隱藏，config SHOW_STUDENT_WORKS=true 時前端自動顯示 -->
+        <div id="section-student-works" class="mb-6 animate-fadeInUp section-hidden" style="animation-delay:0.15s;">
             <div class="flex items-center gap-4 mb-4">
                 <div class="h-[1px] w-6 bg-gradient-to-r from-transparent to-[#D4B78F]/40"></div>
                 <span class="text-xs tracking-[0.4em] text-[#A39171] uppercase">Student Works</span>
@@ -889,14 +929,18 @@
             POLL_INTERVAL:  20000   // 背景輪詢間隔 ms（20秒）
         };
 
-        // ── UTM 解析 + og:url 自動填入 ──
+        // ── UTM 解析 + og:url + canonical 自動填入 ──
         function parseUTM() {
             const p = new URLSearchParams(window.location.search);
             document.getElementById('utm_source').value   = p.get('utm_source')   || '';
             document.getElementById('utm_medium').value   = p.get('utm_medium')   || '';
             document.getElementById('utm_campaign').value = p.get('utm_campaign') || '';
+            const cleanUrl = window.location.href.split('?')[0];
             const ogUrl = document.querySelector('meta[property="og:url"]');
-            if (ogUrl) ogUrl.setAttribute('content', window.location.href.split('?')[0]);
+            if (ogUrl) ogUrl.setAttribute('content', cleanUrl);
+            // canonical
+            const canon = document.querySelector('link[rel="canonical"]');
+            if (canon && !canon.href) canon.setAttribute('href', cleanUrl);
         }
 
         // ── UI：骨架屏 → 真實內容 ──
@@ -1213,8 +1257,16 @@
                         if (cardImg && safeImgUrl(data.courseImage)) {
                             cardImg.src = safeImgUrl(data.courseImage);
                             cardImg.onload  = () => { if(cardFallback) cardFallback.style.display='none'; };
-                            cardImg.onerror = () => { cardImg.style.display='none'; };
-                        } else if (cardImg) { cardImg.style.display='none'; }
+                            cardImg.onerror = () => {
+                                // 圖片載入失敗（Drive 連結未公開等）保留 fallback 提示
+                                cardImg.style.display='none';
+                                if(cardFallback) cardFallback.style.display='flex';
+                            };
+                        } else if (cardImg) {
+                            // 未設定圖片：顯示 fallback 引導
+                            cardImg.style.display='none';
+                            if(cardFallback) cardFallback.style.display='flex';
+                        }
 
                         // 文案統計
                         setEl('proof-headline', data.proofHeadline);
@@ -1226,11 +1278,17 @@
                         setEl('stat3-num',   data.proofStat3Num);
                         setEl('stat3-label', data.proofStat3Label);
 
-                        // 學員圖片
-                        const si1 = document.getElementById('student-img-1');
-                        const si2 = document.getElementById('student-img-2');
-                        if (si1 && safeImgUrl(data.studentImg1)) si1.src = safeImgUrl(data.studentImg1);
-                        if (si2 && safeImgUrl(data.studentImg2)) si2.src = safeImgUrl(data.studentImg2);
+                        // 學員圖片（Drive URL 支援，錯誤時保留預設圖）
+                        const loadStudentImg = (id, url) => {
+                            const el = document.getElementById(id);
+                            if (!el || !safeImgUrl(url)) return;
+                            const tmp = new Image();
+                            tmp.onload  = () => { el.src = url; };
+                            tmp.onerror = () => { /* 保留預設圖不替換 */ };
+                            tmp.src = url;
+                        };
+                        loadStudentImg('student-img-1', data.studentImg1);
+                        loadStudentImg('student-img-2', data.studentImg2);
                         setEl('student-caption-1', data.studentImg1Caption);
                         setEl('student-caption-2', data.studentImg2Caption);
 
@@ -1245,6 +1303,17 @@
                             document.querySelectorAll('.line-name-text').forEach(el => {
                                 el.textContent = data.lineName || '御景家 YUJINGJIA';
                             });
+                        }
+
+                        // 需求三：學員作品區塊顯示控制
+                        // config SHOW_STUDENT_WORKS=true → 移除 section-hidden 顯示區塊
+                        const studentWorksSection = document.getElementById('section-student-works');
+                        if (studentWorksSection) {
+                            if (data.showStudentWorks === true) {
+                                studentWorksSection.classList.remove('section-hidden');
+                            } else {
+                                studentWorksSection.classList.add('section-hidden');
+                            }
                         }
 
                         revealUI(); isFirstLoad = false;
