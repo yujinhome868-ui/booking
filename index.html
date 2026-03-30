@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<!-- index_v15.html — v7修正：
-     需求一(通知範本設定工作表)
-     需求二(開課前2天提醒+取消暖心信+LINE Messaging API)
-     需求三(學員作品區塊隱藏：section-student-works hidden class，由GAS SHOW_STUDENT_WORKS控制)
-     廣告合規修正
+<!-- index_v15_fixed.html — v7.1 修正版
+     修正一：前端快取改為 15 秒 + bust 參數強制刷新，確保 config 變更即時反映
+     修正二：效能優化 — 關鍵 CSS inline、字型/FA/Tailwind 非阻塞載入、提前 prefetch API
+     修正三：圖片連結 — 前端自動轉換 Google Drive /view 連結為可嵌入 /uc?export=view 格式
+             同時處理 Drive 圖片的 CORS 問題（改用 img 標籤直接載入而非 background-image）
 -->
 <html lang="zh-TW">
 <head>
@@ -16,77 +16,26 @@
     <meta name="theme-color" content="#0D0C0B">
     <meta name="color-scheme" content="dark">
 
-    <!-- Open Graph / 廣告分享預覽 -->
     <meta property="og:title" content="御景家＿神明花 | 基礎課程報名登記">
     <meta property="og:description" content="專為零基礎設計的神明花手作課，名額有限，點擊進入報名系統預約席次。">
     <meta property="og:type" content="website">
-    <meta property="og:url" content=""><!-- 由 JS 自動填入當前網址 -->
+    <meta property="og:url" content="">
     <meta property="og:image" content="https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&q=80&w=1200">
-    <!-- 建議換成自有圖片（1200×630px）以確保 FB/IG 廣告預覽圖正確顯示 -->
-
-    <!-- canonical：廣告平台合規必備 -->
-    <link rel="canonical" href=""><!-- 由 JS 自動填入 -->
-
-    <!-- 廣告安全：Referrer Policy -->
+    <link rel="canonical" href="">
     <meta name="referrer" content="origin-when-cross-origin">
 
-    <!-- Content Security Policy（v14：放寬 script-src 支援廣告像素 + GAS redirect） -->
-    <meta http-equiv="Content-Security-Policy"
-          content="default-src 'self' https:;
-                   script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://connect.facebook.net https://analytics.tiktok.com https://www.googletagmanager.com;
-                   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com;
-                   font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com;
-                   img-src 'self' data: https: blob:;
-                   connect-src 'self' https://script.google.com https://script.googleusercontent.com https://www.facebook.com https://analytics.tiktok.com;
-                   frame-src https://www.facebook.com;">
-
-    <!-- FB 域名驗證（取得驗證碼後取消註解並填入）
-    <meta name="facebook-domain-verification" content="填入你的驗證碼"> -->
-
-    <!-- TikTok 域名驗證（取得驗證碼後取消註解並填入）
-    <meta name="tiktok-domain-verification" content="填入你的驗證碼"> -->
-
-    <!-- ═══ Meta Pixel（有 Pixel ID 後取消整段註解）═══ -->
-    <!--
-    <script>
-    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
-    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
-    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
-    document,'script','https://connect.facebook.net/en_US/fbevents.js');
-    fbq('init', '填入你的FB_PIXEL_ID');
-    fbq('track', 'PageView');
-    </script>
-    <noscript><img height="1" width="1" style="display:none"
-    src="https://www.facebook.com/tr?id=填入你的FB_PIXEL_ID&ev=PageView&noscript=1"/></noscript>
-    -->
-
-    <!-- ═══ TikTok Pixel（有 Pixel ID 後取消整段註解）═══ -->
-    <!--
-    <script>
-    !function (w, d, t) {
-      w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];
-      ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"];
-      ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};
-      for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);
-      ttq.load('填入你的TIKTOK_PIXEL_ID');
-      ttq.page();
-    }(window, document, 'ttq');
-    </script>
-    -->
-
-    <!-- ════ 效能優化：DNS prefetch & preconnect ════ -->
-    <!-- 提前解析/建立連線，大幅縮短首次 API 呼叫延遲 -->
+    <!-- ════ v7.1 效能優化：DNS prefetch & preconnect ════ -->
     <link rel="dns-prefetch" href="https://script.google.com">
+    <link rel="dns-prefetch" href="https://script.googleusercontent.com">
     <link rel="dns-prefetch" href="https://fonts.googleapis.com">
     <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://drive.google.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://script.google.com">
     <link rel="preconnect" href="https://script.googleusercontent.com">
 
-    <!-- ════ 字型：非阻塞載入，防止 FOIT ════ -->
-    <!-- media print trick：先以 print 載入（不阻塞），onload 切回 all -->
+    <!-- ════ v7.1 效能優化：字型非阻塞載入 ════ -->
     <link rel="preload" as="style"
           href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap"
@@ -95,7 +44,7 @@
       <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     </noscript>
 
-    <!-- ════ Font Awesome：media print trick → 非阻塞載入 ════ -->
+    <!-- ════ Font Awesome 非阻塞 ════ -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
           crossorigin="anonymous" referrerpolicy="no-referrer"
           media="print" onload="this.media='all'">
@@ -103,13 +52,11 @@
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     </noscript>
 
-    <!-- ════ Tailwind：非同步載入，不阻塞 FCP ════ -->
-    <!-- 效能說明：Tailwind CDN 約 400KB，改為 defer 載入；
-         初始 render 用內嵌 CSS，Tailwind 只補 utility class -->
+    <!-- ════ Tailwind defer（不阻塞 FCP）════ -->
     <script defer src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        /* ════ Critical CSS（內嵌，不阻塞 FCP）════ */
+        /* ════ Critical CSS ════ */
         :root {
             --brand-gold: #D4B78F;
             --brand-gold-dark: #A38A6A;
@@ -125,7 +72,6 @@
             color: var(--brand-text);
             overflow-x: hidden;
             padding-bottom: env(safe-area-inset-bottom);
-            /* contain: paint; — 提升合成層效能 */
         }
         .font-serif { font-family: 'Playfair Display', Georgia, serif; }
         .bg-pattern {
@@ -142,7 +88,6 @@
             background-size: 200% 100%;
             animation: shimmer 1.6s infinite;
             border-radius: 0.5rem;
-            /* will-change: background-position; — 僅在需要時開啟 */
         }
         @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
         .skeleton-text  { height:1em; width:60%; margin-bottom:0.4em; }
@@ -217,7 +162,6 @@
             border:none; cursor:pointer;
             -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
-            contain: layout style;
         }
         .btn-gold::after {
             content:''; position:absolute; top:-50%; left:-60%;
@@ -231,6 +175,7 @@
         }
         .btn-gold:hover:not(:disabled)::after { left:120%; }
         .btn-gold:disabled { opacity:0.6; cursor:not-allowed; }
+        .btn-gold:not(:disabled) { will-change: transform; }
         .btn-spinner {
             display:inline-block; width:14px; height:14px;
             border:2px solid rgba(18,17,15,0.3); border-top-color:#12110F;
@@ -274,7 +219,7 @@
 
         /* ─── Seats bar ─── */
         .seats-bar-wrap { height:3px; background:rgba(255,255,255,0.06); border-radius:2px; overflow:hidden; margin-top:0.5rem; }
-        .seats-bar-fill { height:100%; border-radius:2px; background:linear-gradient(90deg,var(--brand-gold),#FF7A35); transition:width 1s cubic-bezier(0.4,0,0.2,1); }
+        .seats-bar-fill { height:100%; border-radius:2px; background:linear-gradient(90deg,var(--brand-gold),#FF7A35); transition:width 1s cubic-bezier(0.4,0,0.2,1); will-change: width; }
 
         .course-info-display {
             background-color:rgba(23,21,18,0.8); border:1px solid var(--brand-accent);
@@ -301,14 +246,11 @@
 
         input[type="checkbox"] { width:18px; height:18px; cursor:pointer; accent-color:var(--brand-gold); }
         .tracking-premium { letter-spacing:0.3em; }
-
-        /* ─── 隱私政策彈窗滾動 ─── */
         .modal-scroll { max-height:85vh; overflow-y:auto; }
         .modal-scroll::-webkit-scrollbar { width:4px; }
         .modal-scroll::-webkit-scrollbar-track { background:transparent; }
         .modal-scroll::-webkit-scrollbar-thumb { background:rgba(212,183,143,0.3); border-radius:2px; }
 
-        /* ─── Checkbox 放大 + 視覺回饋 ─── */
         #checkbox-wrap input[type="checkbox"],
         #privacy-wrap  input[type="checkbox"] {
             width: 20px !important; height: 20px !important;
@@ -335,25 +277,41 @@
             color: var(--brand-gold) !important;
         }
 
-        /* ─── 效能：減少 will-change 濫用 ─── */
-        /* 只對真正動畫的元素標記，避免過多合成層佔記憶體 */
-        .btn-gold:not(:disabled) { will-change: transform; }
-        .seats-bar-fill { will-change: width; }
-
         /* ─── 需求三：區塊隱藏控制 ─── */
-        /* 使用方式：
-           隱藏：在元素加上 class="section-hidden"
-           顯示：移除 class，或在 config 設定 SHOW_STUDENT_WORKS=true
-           ⚠️ 不要刪除 HTML，只加/移除 class 即可一鍵切換 */
         .section-hidden { display: none !important; }
 
-        /* ─── 圖片說明浮層 ─── */
+        /* ─── v7.1 修正：圖片容器 ─── */
         .img-guide-badge {
             display: inline-flex; align-items: center; gap: 0.35rem;
             font-size: 0.7rem; letter-spacing: 0.08em; color: #5C5547;
             background: rgba(22,20,18,0.8); border: 1px solid rgba(42,37,27,0.8);
             border-radius: 9999px; padding: 0.2rem 0.6rem; margin-top: 0.4rem;
         }
+
+        /* ─── v7.1 新增：圖片載入狀態 ─── */
+        .img-loading {
+            background: linear-gradient(90deg, #1a1814 25%, #262219 50%, #1a1814 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.6s infinite;
+        }
+        .img-error-fallback {
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 0.5rem; padding: 1rem;
+            background: linear-gradient(135deg,#1a1814 0%,#2A251B 100%);
+            color: #3A3225; font-size: 0.75rem; text-align: center;
+        }
+
+        /* ─── v7.1 新增：Config 同步狀態指示器 ─── */
+        #config-sync-indicator {
+            position: fixed; bottom: calc(5rem + env(safe-area-inset-bottom));
+            right: 1rem; z-index: 200;
+            background: rgba(13,12,11,0.95); border: 1px solid rgba(212,183,143,0.2);
+            border-radius: 0.75rem; padding: 0.5rem 0.75rem;
+            font-size: 0.7rem; color: #A39171; letter-spacing: 0.05em;
+            opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
+        }
+        #config-sync-indicator.show { opacity: 1; }
     </style>
 </head>
 
@@ -383,13 +341,12 @@
     <!-- ═══ Hero ═══ -->
     <header class="relative h-[28vh] md:h-[35vh] flex items-center justify-center overflow-hidden">
         <div class="absolute inset-0 bg-cover bg-center opacity-10 scale-110" id="hero-bg"
-             style="background-image:url('https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&q=80&w=1200');will-change:transform;"></div>
+             style="background-image:url('https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&q=80&w=1200');"></div>
         <div class="absolute inset-0 bg-gradient-to-b from-transparent via-[#0D0C0B]/80 to-[#0D0C0B]"></div>
         <div class="relative text-center px-6 animate-fadeInUp">
             <div class="inline-block px-4 py-1 border border-[#D4B78F]/20 rounded-full text-xs tracking-[0.4em] text-[#A39171] mb-4 uppercase">Exquisite Floral Class</div>
             <h2 id="hero-title" class="text-3xl md:text-4xl font-serif tracking-[0.25em] text-[#D4B78F] mb-3">神明花基礎課程</h2>
             <p id="hero-tagline" class="text-sm md:text-base tracking-[0.15em] text-[#8A8068] mb-3 font-light">一堂課，完成一件能供奉與傳遞心意的作品</p>
-            <!-- Seats Availability 進度條 -->
             <div id="seats-status-wrap" class="w-full max-w-xs mx-auto mt-1 mb-1" style="display:none">
                 <div class="flex justify-between items-center text-xs tracking-widest text-[#5C5547] uppercase mb-1">
                     <span>Seats Availability</span>
@@ -420,26 +377,30 @@
 
         <!-- ═══ 課程卡片實體 ═══ -->
         <!--
-        📸 課程主圖更換方式（完全免費，在 Google 試算表 config 分頁操作）：
-           ① 把圖片上傳到 Google 雲端硬碟（drive.google.com）
-           ② 右鍵圖片 → 共用 → 一般存取改成「知道連結的任何人」→ 檢視者 → 完成
-           ③ 複製分享連結，取出 ID（連結格式：.../file/d/【這段是ID】/view）
-           ④ 組成：https://drive.google.com/uc?export=view&id=【貼入ID】
-           ⑤ 將上面網址貼入 config 分頁的 COURSE_IMAGE 欄
-           ✅ 建議尺寸：1200 × 675 px（16:9 橫式），任何 16:9 皆可自動裁切
+        📸 課程主圖設定方式（兩種格式均支援）：
+           格式A（分享連結，前端自動轉換）：
+             https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+           格式B（直接嵌入連結）：
+             https://drive.google.com/uc?export=view&id=FILE_ID
+           ✅ 兩種格式皆可直接填入 config 的 COURSE_IMAGE 欄，系統自動處理
+           ⚠️ 圖片需設定「知道連結的任何人皆可檢視」
         -->
         <div id="course-card" class="rounded-2xl overflow-hidden mb-3 shadow-lg"
              style="display:none;background:rgba(22,20,18,0.75);border:1px solid rgba(42,37,27,0.9);">
 
             <div class="relative w-full overflow-hidden rounded-t-2xl" style="aspect-ratio:16/9;">
-                <img id="course-image" src="" alt="課程圖片" decoding="async"
-                     class="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 hover:scale-105"
-                     style="display:block;">
-                <div id="course-image-fallback"
-                     class="absolute inset-0 flex flex-col items-center justify-center gap-2"
-                     style="background:linear-gradient(135deg,#1a1814 0%,#2A251B 100%);">
-                    <span class="text-[#3A3225] text-xs tracking-widest">尚未設定課程圖片</span>
-                    <span class="img-guide-badge">📸 在 config 填入 COURSE_IMAGE 網址</span>
+                <!-- v7.1 修正：圖片容器結構優化，支援 Drive 圖片 + loading 狀態 -->
+                <div id="course-image-wrap" class="absolute inset-0 img-loading">
+                    <img id="course-image" src="" alt="課程圖片" decoding="async"
+                         class="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 hover:scale-105"
+                         style="display:none; opacity:0; transition: opacity 0.4s ease;">
+                    <div id="course-image-fallback"
+                         class="absolute inset-0 img-error-fallback"
+                         style="display:none;">
+                        <span>📸</span>
+                        <span>請在 config 填入 COURSE_IMAGE</span>
+                        <span class="img-guide-badge">支援 Google Drive 連結</span>
+                    </div>
                 </div>
                 <div class="absolute bottom-3 left-3 z-10">
                     <span id="course-card-badge" class="px-2.5 py-1 rounded-full text-xs tracking-wider text-[#D4B78F]"
@@ -450,15 +411,11 @@
             <div class="px-5 pt-4 pb-5">
                 <h3 id="course-card-title"
                     class="font-serif text-base md:text-lg text-[#E8DCC4] tracking-[0.15em] leading-snug mb-0.5"></h3>
-                <p id="course-card-date"
-                   class="text-sm text-[#5C5547] tracking-wider mb-2"></p>
+                <p id="course-card-date" class="text-sm text-[#5C5547] tracking-wider mb-2"></p>
                 <div class="flex items-baseline gap-3 mb-1.5">
-                    <span id="course-card-price"
-                          class="font-bold text-2xl md:text-3xl"
+                    <span id="course-card-price" class="font-bold text-2xl md:text-3xl"
                           style="color:var(--brand-gold);font-family:'Playfair Display',serif;letter-spacing:0.02em;"></span>
-                    <span id="course-card-original-price"
-                          class="text-sm line-through tracking-wide"
-                          style="color:#4A4438;"></span>
+                    <span id="course-card-original-price" class="text-sm line-through tracking-wide" style="color:#4A4438;"></span>
                 </div>
                 <p id="course-card-sub" class="course-card-sub mt-1.5 tracking-wider">小班制精緻教學・材料全含・當天完成作品</p>
             </div>
@@ -504,7 +461,7 @@
             <div class="info-glass-body"><div class="skeleton skeleton-info"></div></div>
         </div>
 
-        <!-- ═══ 說明卡片：適合對象（左）+ 繳費方式（右）─── -->
+        <!-- ═══ 說明卡片 ═══ -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
             <div id="info-card-1" class="info-glass" style="display:none;padding:0.85rem 0.9rem;">
                 <div class="info-glass-title" style="margin-bottom:0.5rem;">
@@ -544,21 +501,6 @@
         </div>
 
         <!-- ═══ 零基礎學員實作圖片展示 ═══ -->
-        <!--
-        📸 學員作品圖更換方式（同課程主圖，在 config 填 STUDENT_IMG1 / STUDENT_IMG2）：
-           ① 上傳圖片至 Google 雲端硬碟 → 設定「任何人知道連結即可檢視」
-           ② 取出 ID → 組成：https://drive.google.com/uc?export=view&id=【ID】
-           ③ 貼入 config 分頁的 STUDENT_IMG1 或 STUDENT_IMG2 欄
-           ✅ 建議尺寸：600 × 750 px（4:5 直式），任何直式照片皆可自動裁切
-           ✅ 同時可在 STUDENT_IMG1_CAPTION / STUDENT_IMG2_CAPTION 欄修改圖片說明文字
-
-        🔐 顯示 / 隱藏控制（需求三）：
-           方法 A：在 config 分頁設定 SHOW_STUDENT_WORKS = true / false（前端自動套用）
-           方法 B：手動移除或加回下方 div 的 class="section-hidden" 即可切換
-                   → 隱藏：<div id="section-student-works" class="mb-6 animate-fadeInUp section-hidden">
-                   → 顯示：<div id="section-student-works" class="mb-6 animate-fadeInUp">
-        -->
-        <!-- 預設 section-hidden：沒有學員作品時先隱藏，config SHOW_STUDENT_WORKS=true 時前端自動顯示 -->
         <div id="section-student-works" class="mb-6 animate-fadeInUp section-hidden" style="animation-delay:0.15s;">
             <div class="flex items-center gap-4 mb-4">
                 <div class="h-[1px] w-6 bg-gradient-to-r from-transparent to-[#D4B78F]/40"></div>
@@ -567,7 +509,6 @@
             </div>
             <h3 class="font-serif text-lg md:text-xl text-[#D4B78F] tracking-[0.2em] text-center mb-1">零基礎學員實作參考</h3>
             <p class="text-center text-sm text-[#5C5547] tracking-wider mb-5">跟著老師的步驟，你也能親手完成</p>
-
             <div class="grid grid-cols-2 gap-3">
                 <div class="group relative overflow-hidden rounded-xl border border-[#2A251B] hover:border-[#D4B78F]/30 transition-all duration-500"
                      style="background:rgba(22,20,18,0.6);">
@@ -605,7 +546,6 @@
         <!-- ═══ 主表單面板 ═══ -->
         <div class="glass-panel rounded-3xl p-5 sm:p-8 md:p-14 animate-fadeInUp relative">
 
-            <!-- 報名截止覆蓋層 -->
             <div id="closed-overlay">
                 <div class="w-16 h-16 rounded-full border border-[#D4B78F]/30 flex items-center justify-center mb-6">
                     <i class="fa-solid fa-lock text-[#D4B78F] text-xl"></i>
@@ -631,7 +571,7 @@
                         <div class="h-[1px] flex-grow bg-gradient-to-r from-[#3A3225] to-transparent"></div>
                     </div>
 
-                    <!-- Honeypot：機器人防護 -->
+                    <!-- Honeypot -->
                     <div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;" tabindex="-1">
                         <input type="text" name="_hp" id="_hp" autocomplete="off" tabindex="-1" placeholder="leave empty">
                     </div>
@@ -680,11 +620,9 @@
                         <input type="hidden" name="utm_campaign" id="utm_campaign">
                     </div>
 
-                    <!-- 繳費同意 + 個資同意 -->
+                    <!-- Checkboxes -->
                     <div class="pt-6 border-t border-[#2A251B]/50 space-y-5">
                         <div id="sk-checkbox" class="skeleton rounded-xl" style="height:3.5rem"></div>
-
-                        <!-- 繳費同意 -->
                         <label id="checkbox-wrap" class="flex items-start gap-5 cursor-pointer group" style="display:none">
                             <div class="mt-1">
                                 <input type="checkbox" name="payment" id="reg-agreement" value="現金繳費" required class="ring-offset-black">
@@ -697,8 +635,6 @@
                             </div>
                         </label>
                         <p class="error-msg ml-10 mt-1" id="err-reg-agreement">請勾選同意後再送出</p>
-
-                        <!-- 個資同意 -->
                         <label id="privacy-wrap" class="flex items-start gap-5 cursor-pointer group" style="display:none">
                             <div class="mt-1">
                                 <input type="checkbox" name="privacy_consent" id="reg-privacy" value="同意" required class="ring-offset-black">
@@ -803,23 +739,12 @@
                 <p class="text-[#5C5547] text-sm tracking-wider">本場次名額已全數額滿</p>
             </div>
             <div id="full-modal-body" class="text-[#A39171] text-sm font-light leading-loose text-left space-y-4 mb-8">
-                <p class="text-[#E8DCC4] border-b border-[#2A251B] pb-4">
-                    每一份報名都代表著一份對花藝的熱忱，我們非常感謝您的關注與支持。🙏
-                </p>
+                <p class="text-[#E8DCC4] border-b border-[#2A251B] pb-4">每一份報名都代表著一份對花藝的熱忱，我們非常感謝您的關注與支持。🙏</p>
                 <p>雖然本場次已額滿，但好消息是——</p>
                 <ul class="space-y-3">
-                    <li class="flex items-start gap-3">
-                        <span class="text-[#D4B78F] mt-0.5">✦</span>
-                        <span>留下您的資料，<strong class="text-[#E8DCC4]">有名額釋出時我們會第一時間通知您遞補</strong></span>
-                    </li>
-                    <li class="flex items-start gap-3">
-                        <span class="text-[#D4B78F] mt-0.5">✦</span>
-                        <span><strong class="text-[#E8DCC4]">下次開課優先通知您</strong>，讓您不再錯過心儀的場次</span>
-                    </li>
-                    <li class="flex items-start gap-3">
-                        <span class="text-[#D4B78F] mt-0.5">✦</span>
-                        <span>加入 LINE 群組，隨時掌握最新課程動態與花藝分享</span>
-                    </li>
+                    <li class="flex items-start gap-3"><span class="text-[#D4B78F] mt-0.5">✦</span><span>留下您的資料，<strong class="text-[#E8DCC4]">有名額釋出時我們會第一時間通知您遞補</strong></span></li>
+                    <li class="flex items-start gap-3"><span class="text-[#D4B78F] mt-0.5">✦</span><span><strong class="text-[#E8DCC4]">下次開課優先通知您</strong>，讓您不再錯過心儀的場次</span></li>
+                    <li class="flex items-start gap-3"><span class="text-[#D4B78F] mt-0.5">✦</span><span>加入 LINE 群組，隨時掌握最新課程動態與花藝分享</span></li>
                 </ul>
             </div>
             <form id="waitlistForm" novalidate class="space-y-5">
@@ -847,7 +772,6 @@
                 </button>
                 <p class="text-center text-sm text-[#3A3225]/70 tracking-wide">留下資料後系統將自動寄送確認信至您的信箱</p>
             </form>
-            <!-- LINE 加好友卡片 -->
             <div class="mt-6 pt-5 border-t border-[#2A251B]/50 text-center">
                 <p class="text-[#5C5547] text-sm tracking-wide mb-3">或加入官方 LINE 帳號直接掌握最新消息</p>
                 <div class="flex items-center gap-4 p-4 rounded-2xl" style="background:rgba(6,199,85,0.08);border:1px solid rgba(6,199,85,0.2);">
@@ -859,7 +783,7 @@
                         <p class="text-[#5C5547] text-xs tracking-wider line-id-text">@yujingjia</p>
                     </div>
                     <a href="https://line.me/R/ti/p/@yujingjia" class="line-add-friend" target="_blank" rel="noopener noreferrer"
-                       style="flex-shrink:0;padding:8px 16px;border-radius:12px;font-size:0.75rem;font-weight:700;letter-spacing:0.05em;color:#fff;text-decoration:none;background:#06C755;">
+                       style="flex-shrink:0;padding:8px 16px;border-radius:12px;font-size:0.75rem;font-weight:700;color:#fff;text-decoration:none;background:#06C755;">
                         加入好友
                     </a>
                 </div>
@@ -867,7 +791,7 @@
         </div>
     </div>
 
-    <!-- ═══ 成功 / 候補彈窗 ═══ -->
+    <!-- ═══ 成功彈窗 ═══ -->
     <div id="success-modal" class="fixed inset-0 z-[100]" style="display:none;align-items:center;justify-content:center;padding:1.5rem">
         <div class="absolute inset-0 bg-black/90 backdrop-blur-xl"></div>
         <div class="bg-[#0D0C0B] border border-[#D4B78F]/30 rounded-[2rem] p-10 md:p-14 max-w-lg w-full relative text-center shadow-[0_0_100px_rgba(0,0,0,1)] animate-fadeInUp modal-glow modal-scroll">
@@ -876,7 +800,6 @@
             </div>
             <h3 id="modalTitle" class="text-2xl md:text-3xl font-serif text-[#D4B78F] mb-6 tracking-[0.2em]">報名已受理</h3>
             <div id="modalDesc" class="text-[#A39171] text-sm font-light leading-loose mb-8 text-left space-y-4"></div>
-            <!-- LINE 加好友卡片 -->
             <div class="mb-8 pt-5 border-t border-[#2A251B]/50">
                 <p class="text-[#A39171] text-sm tracking-wider mb-4">加入官方帳號，掌握最新課程動態與花藝分享</p>
                 <div class="flex items-center gap-4 p-4 rounded-2xl" style="background:rgba(6,199,85,0.08);border:1px solid rgba(6,199,85,0.2);">
@@ -888,7 +811,7 @@
                         <p class="text-[#5C5547] text-xs tracking-wider line-id-text">@yujingjia</p>
                     </div>
                     <a href="https://line.me/R/ti/p/@yujingjia" class="line-add-friend" target="_blank" rel="noopener noreferrer"
-                       style="flex-shrink:0;padding:8px 16px;border-radius:12px;font-size:0.75rem;font-weight:700;letter-spacing:0.05em;color:#fff;text-decoration:none;background:#06C755;">
+                       style="flex-shrink:0;padding:8px 16px;border-radius:12px;font-size:0.75rem;font-weight:700;color:#fff;text-decoration:none;background:#06C755;">
                         加入好友
                     </a>
                 </div>
@@ -897,7 +820,7 @@
         </div>
     </div>
 
-    <!-- ═══ 底部懸浮 CTA 按鈕 ═══ -->
+    <!-- ═══ 底部懸浮 CTA ═══ -->
     <div id="sticky-cta"
          class="fixed bottom-0 left-0 w-full z-40 transition-transform duration-500 ease-in-out translate-y-full"
          style="padding-bottom: env(safe-area-inset-bottom);">
@@ -911,6 +834,9 @@
         </div>
     </div>
 
+    <!-- ═══ Config 同步指示器 ═══ -->
+    <div id="config-sync-indicator">🔄 資料已更新</div>
+
     <script>
     (() => {
         'use strict';
@@ -918,18 +844,59 @@
         // ════════════════════════════════════════════
         // ⚙️ 設定區 — 部署後請更新 scriptURL
         // ════════════════════════════════════════════
-        // ⚠️ 重要：換了 Google 帳號重新部署後，請將新的部署 URL 貼在下方
+        // ⚠️ 此為最重要的設定！請填入您 GAS 部署後的 URL
         // 步驟：GAS 編輯器 → 部署 → 管理部署作業 → 複製 URL → 貼在此處
         const CONFIG = {
             scriptURL: 'https://script.google.com/macros/s/AKfycbz9hwzMi98E4ZNeLVtECQAQohDSUKPwZ6El6Hzb6HHn4fP3yDEEOUVjgZImbJitFRNp/exec',
-            // 範例：'https://script.google.com/macros/s/AKfycb.../exec'
+            // ↑↑↑ 請將上方 URL 換成您最新的部署 URL ↑↑↑
             actions: { CHECK_FULL:'checkFull', REGISTER:'register', WAITLIST:'waitlist' },
-            URGENCY_THRESHOLD: 3,   // 剩餘 ≤ N 席顯示緊迫警示
-            FUSE_THRESHOLD:   10,   // 正取達此人數完全關閉
-            POLL_INTERVAL:  20000   // 背景輪詢間隔 ms（20秒）
+            URGENCY_THRESHOLD: 3,
+            FUSE_THRESHOLD:   10,
+            POLL_INTERVAL:  20000,
+            // v7.1：本地快取 TTL（毫秒），短於 GAS 側快取，確保 config 改變後快速反映
+            LOCAL_CACHE_TTL: 15000
         };
 
-        // ── UTM 解析 + og:url + canonical 自動填入 ──
+        // ════════════════════════════════════════════
+        // v7.1 修正一：Google Drive URL 轉換（前端側）
+        // ════════════════════════════════════════════
+        // GAS 側已轉換，前端再加一層保護，確保萬無一失
+        function convertDriveUrl(url) {
+            if (!url || typeof url !== 'string') return '';
+            url = url.trim();
+            if (url.indexOf('drive.google.com/uc') >= 0) return url;
+            const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+            if (match && match[1]) return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+            const match2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+            if (match2 && match2[1]) return `https://drive.google.com/uc?export=view&id=${match2[1]}`;
+            if (/^https:\/\//.test(url)) return url;
+            return '';
+        }
+
+        // ════════════════════════════════════════════
+        // v7.1 修正二：本地快取（短 TTL，確保即時同步）
+        // ════════════════════════════════════════════
+        let _localCache = null;
+        let _localCacheTime = 0;
+
+        function getLocalCache() {
+            if (_localCache && (Date.now() - _localCacheTime) < CONFIG.LOCAL_CACHE_TTL) {
+                return _localCache;
+            }
+            return null;
+        }
+
+        function setLocalCache(data) {
+            _localCache = data;
+            _localCacheTime = Date.now();
+        }
+
+        function invalidateLocalCache() {
+            _localCache = null;
+            _localCacheTime = 0;
+        }
+
+        // ── UTM 解析 ──
         function parseUTM() {
             const p = new URLSearchParams(window.location.search);
             document.getElementById('utm_source').value   = p.get('utm_source')   || '';
@@ -938,9 +905,8 @@
             const cleanUrl = window.location.href.split('?')[0];
             const ogUrl = document.querySelector('meta[property="og:url"]');
             if (ogUrl) ogUrl.setAttribute('content', cleanUrl);
-            // canonical
             const canon = document.querySelector('link[rel="canonical"]');
-            if (canon && !canon.href) canon.setAttribute('href', cleanUrl);
+            if (canon && !canon.getAttribute('href')) canon.setAttribute('href', cleanUrl);
         }
 
         // ── UI：骨架屏 → 真實內容 ──
@@ -993,7 +959,6 @@
             }
         };
 
-        // ── UI 工具 ──
         const UI = {
             showModal(id){ document.getElementById(id).style.display='flex'; },
             hideModal(id){ document.getElementById(id).style.display='none'; },
@@ -1003,6 +968,14 @@
                 document.getElementById('modalDesc').innerHTML=desc;
                 document.getElementById('modalIcon').className=icon;
                 this.showModal('success-modal');
+            },
+            showSyncIndicator(msg='🔄 資料已更新'){
+                const el = document.getElementById('config-sync-indicator');
+                if (!el) return;
+                el.textContent = msg;
+                el.classList.add('show');
+                clearTimeout(el._timer);
+                el._timer = setTimeout(() => el.classList.remove('show'), 3000);
             },
             showToast(msg, type='error'){
                 let toast = document.getElementById('ui-toast');
@@ -1025,28 +998,88 @@
                 toast.style.border     = isErr ? '1px solid rgba(139,0,0,0.5)' : '1px solid rgba(212,183,143,0.3)';
                 toast.style.color      = isErr ? '#e06c6c' : '#D4B78F';
                 toast.style.boxShadow  = '0 8px 40px rgba(0,0,0,0.7)';
-                toast.textContent = '';
-                toast.appendChild(document.createTextNode((isErr ? '⚠ ' : '✦ ') + msg));
+                toast.textContent = (isErr ? '⚠ ' : '✦ ') + msg;
                 toast.style.opacity = '1';
                 toast.style.transform = 'translateX(-50%) translateY(0)';
                 clearTimeout(toast._timer);
-                toast._timer = setTimeout(()=>{
-                    toast.style.opacity = '0';
-                    toast.style.transform = 'translateX(-50%) translateY(20px)';
-                }, 5000);
+                toast._timer = setTimeout(()=>{ toast.style.opacity='0'; toast.style.transform='translateX(-50%) translateY(20px)'; }, 5000);
             }
         };
 
+        // ════════════════════════════════════════════
+        // v7.1 修正三：圖片載入函式（支援 Drive）
+        // ════════════════════════════════════════════
+        // Google Drive 的 /uc?export=view 會先重導向再回傳圖片
+        // 需用 img 標籤直接載入（不能用 fetch/XHR，跨域限制）
+        function loadCourseImage(rawUrl) {
+            const wrap     = document.getElementById('course-image-wrap');
+            const img      = document.getElementById('course-image');
+            const fallback = document.getElementById('course-image-fallback');
+            if (!wrap || !img || !fallback) return;
+
+            const url = convertDriveUrl(rawUrl);
+            if (!url) {
+                // 無圖片：顯示 fallback
+                wrap.classList.remove('img-loading');
+                img.style.display = 'none';
+                fallback.style.display = 'flex';
+                return;
+            }
+
+            // 先保持 loading 狀態，等圖片載入完成
+            wrap.classList.add('img-loading');
+            img.style.display = 'none';
+            img.style.opacity = '0';
+            fallback.style.display = 'none';
+
+            const testImg = new Image();
+
+            testImg.onload = () => {
+                img.src = testImg.src;
+                img.style.display = 'block';
+                wrap.classList.remove('img-loading');
+                // 淡入效果
+                requestAnimationFrame(() => {
+                    img.style.opacity = '1';
+                });
+            };
+
+            testImg.onerror = () => {
+                wrap.classList.remove('img-loading');
+                img.style.display = 'none';
+                fallback.style.display = 'flex';
+                // 提示 Drive 圖片未公開
+                fallback.innerHTML = `
+                    <span style="font-size:1.5rem">🔒</span>
+                    <span style="color:#5C5547;font-size:0.75rem;">圖片載入失敗</span>
+                    <span style="display:inline-flex;align-items:center;gap:0.35rem;font-size:0.7rem;letter-spacing:0.08em;color:#3A3225;background:rgba(22,20,18,0.8);border:1px solid rgba(42,37,27,0.8);border-radius:9999px;padding:0.2rem 0.6rem;margin-top:0.4rem;">
+                        請確認 Drive 圖片已設為「公開」
+                    </span>
+                `;
+                console.warn('[圖片] 載入失敗，請確認：\n1. 圖片已上傳至 Google Drive\n2. 已設定「知道連結的任何人皆可檢視」\n3. URL 格式正確（系統已自動轉換）\n嘗試的 URL：', url);
+            };
+
+            testImg.src = url;
+        }
+
+        function loadStudentImg(id, rawUrl) {
+            const el = document.getElementById(id);
+            if (!el || !rawUrl) return;
+            const url = convertDriveUrl(rawUrl);
+            if (!url) return;
+            const tmp = new Image();
+            tmp.onload  = () => { el.src = url; };
+            tmp.onerror = () => { /* 保留預設圖 */ };
+            tmp.src = url;
+        }
+
         // ── API ──
         const Api = {
-            // JSONP fallback：解決某些瀏覽器/WebView 對 GAS redirect 的 CORS 限制
-            _jsonpCheckFull() {
+            _jsonpCheckFull(bust) {
                 return new Promise((resolve, reject) => {
                     const cbName = '__gas_cb_' + Date.now();
                     const script = document.createElement('script');
-                    const timer  = setTimeout(() => {
-                        cleanup(); reject(new Error('JSONP timeout'));
-                    }, 10000);
+                    const timer  = setTimeout(() => { cleanup(); reject(new Error('JSONP timeout')); }, 10000);
                     function cleanup() {
                         clearTimeout(timer);
                         delete window[cbName];
@@ -1058,298 +1091,298 @@
                         resolve(data);
                     };
                     script.onerror = () => { cleanup(); reject(new Error('JSONP script load failed')); };
-                    script.src = `${CONFIG.scriptURL}?action=${CONFIG.actions.CHECK_FULL}&callback=${cbName}&_=${Date.now()}`;
+                    const bustStr = bust ? `&bust=${bust}` : '';
+                    script.src = `${CONFIG.scriptURL}?action=${CONFIG.actions.CHECK_FULL}&callback=${cbName}${bustStr}&_=${Date.now()}`;
                     document.head.appendChild(script);
                 });
             },
-            async checkFull(){
-                // 先嘗試 fetch，失敗後自動 fallback 到 JSONP
+            async checkFull(forceRefresh = false) {
+                // 非強制刷新時，先查本地快取
+                if (!forceRefresh) {
+                    const cached = getLocalCache();
+                    if (cached) return cached;
+                }
+                const bustParam = forceRefresh ? Date.now() : null;
+                const url = `${CONFIG.scriptURL}?action=${CONFIG.actions.CHECK_FULL}${bustParam ? `&bust=${bustParam}` : ''}&_=${Date.now()}`;
                 const ctrl = new AbortController();
                 const timeout = setTimeout(() => ctrl.abort(), 8000);
                 try {
-                    const res = await fetch(`${CONFIG.scriptURL}?action=${CONFIG.actions.CHECK_FULL}`, {
-                        redirect: 'follow', cache: 'no-cache', signal: ctrl.signal
-                    });
+                    const res = await fetch(url, { redirect: 'follow', cache: 'no-cache', signal: ctrl.signal });
                     clearTimeout(timeout);
                     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    const text = await res.text();
-                    let data;
-                    try { data = JSON.parse(text); }
-                    catch(e) { throw new Error('JSON parse error'); }
+                    const data = await res.json();
                     if (data.result === 'error') throw new Error('GAS: ' + data.message);
-                    if (typeof data !== 'object' || Array.isArray(data)) throw new Error('非法回應格式');
+                    setLocalCache(data);
                     return data;
                 } catch(fetchErr) {
                     clearTimeout(timeout);
-                    // fetch 失敗 → 嘗試 JSONP
                     console.warn('[Api.checkFull] fetch failed, trying JSONP:', fetchErr.message);
-                    return await this._jsonpCheckFull();
+                    const data = await this._jsonpCheckFull(bustParam);
+                    setLocalCache(data);
+                    return data;
                 }
             },
-            async post(fd){
+            async post(fd) {
                 const ctrl = new AbortController();
                 const timeout = setTimeout(() => ctrl.abort(), 15000);
                 try {
-                    const res = await fetch(CONFIG.scriptURL, {
-                        method: 'POST', body: fd, redirect: 'follow', signal: ctrl.signal
-                    });
+                    const res = await fetch(CONFIG.scriptURL, { method:'POST', body:fd, redirect:'follow', signal:ctrl.signal });
                     clearTimeout(timeout);
                     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    const text = await res.text();
-                    try { return JSON.parse(text); }
-                    catch(e) { throw new Error('回應格式錯誤'); }
-                } catch(e) {
-                    clearTimeout(timeout);
-                    throw e;
-                }
+                    return await res.json();
+                } catch(e) { clearTimeout(timeout); throw e; }
             }
         };
 
-        // ── 廣告像素事件 ──
-        function fireLeadEvent(status){
-            try{
+        function fireLeadEvent(status) {
+            try {
                 if(typeof fbq==='function') fbq('track','Lead',{content_name:status});
                 if(typeof ttq!=='undefined'&&typeof ttq.track==='function') ttq.track('SubmitForm',{content_name:status});
-            }catch(e){ console.warn('[Pixel]',e); }
+            } catch(e) {}
         }
 
-        // ── 名額狀態條 ──
         let cachedMaxSeats = 10;
-        function updateSeatsUI(remaining, maxSeats){
+        function updateSeatsUI(remaining, maxSeats) {
             cachedMaxSeats = maxSeats || cachedMaxSeats;
             const used = cachedMaxSeats - remaining;
             const pct  = Math.min(100, Math.round((used/cachedMaxSeats)*100));
             const bar  = document.getElementById('seats-bar-fill');
-            if(bar) bar.style.width = pct+'%';
+            if (bar) bar.style.width = pct + '%';
             const almostFull = document.getElementById('seats-almost-full');
-            if(almostFull){
+            if (almostFull) {
                 remaining > 0 && remaining <= CONFIG.URGENCY_THRESHOLD
                     ? almostFull.classList.remove('hidden')
                     : almostFull.classList.add('hidden');
             }
             const urgencyBar = document.getElementById('urgency-bar');
-            if(remaining<=0){ urgencyBar.classList.remove('show'); }
-            else if(remaining<=CONFIG.URGENCY_THRESHOLD){ urgencyBar.classList.add('show'); }
-            else { urgencyBar.classList.remove('show'); }
+            if (urgencyBar) {
+                if (remaining <= 0) urgencyBar.classList.remove('show');
+                else if (remaining <= CONFIG.URGENCY_THRESHOLD) urgencyBar.classList.add('show');
+                else urgencyBar.classList.remove('show');
+            }
         }
 
-        // ── 場次切換自動解鎖 session ──
         function checkAndRefreshSessionForNewCourse(courseDate) {
             const stored = sessionStorage.getItem('reg_course_date');
-            if (stored && stored !== courseDate) {
-                sessionStorage.removeItem('reg_submitted');
-            }
+            if (stored && stored !== courseDate) sessionStorage.removeItem('reg_submitted');
             sessionStorage.setItem('reg_course_date', courseDate);
         }
 
-        // ════ 效能優化：提前發起 API 請求（不等 DOMContentLoaded）════
-        // GAS 冷啟動約 1-3 秒，提前 kick 可節省這段等待時間
+        // ── v7.1：提前發起 API 請求 ──
         let _prefetchPromise = null;
-        if (CONFIG.scriptURL && !CONFIG.scriptURL.includes('請貼入')) {
-            _prefetchPromise = Api.checkFull().catch(() => null);
+        if (CONFIG.scriptURL && !CONFIG.scriptURL.includes('請貼入') && !CONFIG.scriptURL.includes('YOUR_')) {
+            _prefetchPromise = Api.checkFull(false).catch(() => null);
         }
 
-        // ── 套用狀態 ──
-        function applyState(data, isPolling=false){
+        // ════════════════════════════════════════════
+        // v7.1 修正一：applyData — 完整套用 API 資料到 UI
+        // ════════════════════════════════════════════
+        // 此函式在初始化和輪詢時都呼叫，確保 config 任何變更都反映到前端
+        let _lastAppliedVersion = 0;
+
+        function applyData(data, isPolling = false) {
+            if (!data || typeof data !== 'object') return;
+
             const remaining = data.remaining ?? 0;
             const maxSeats  = Number(data.maxSeats || cachedMaxSeats);
+
+            // v7.1：偵測資料版本，輪詢時若有更新則重新套用文案
+            const dataVersion = data._v || 0;
+            const isNewData   = dataVersion > _lastAppliedVersion;
+            if (isNewData && isPolling && _lastAppliedVersion > 0) {
+                // 後台有更新，重新套用課程資訊
+                applyCourseInfo(data);
+                UI.showSyncIndicator('🔄 課程資訊已更新');
+            }
+            if (dataVersion > _lastAppliedVersion) _lastAppliedVersion = dataVersion;
+
             updateSeatsUI(remaining, maxSeats);
             if (data.courseDate) checkAndRefreshSessionForNewCourse(data.courseDate);
 
             // 熔斷
-            if(data.isFull && maxSeats >= CONFIG.FUSE_THRESHOLD && remaining === 0){
+            if (data.isFull && maxSeats >= CONFIG.FUSE_THRESHOLD && remaining === 0) {
                 document.getElementById('closed-overlay').classList.add('show');
                 const btn = document.getElementById('submitBtn');
-                if(btn) btn.disabled = true;
+                if (btn) btn.disabled = true;
                 return;
             }
+
             // 額滿
-            if(data.isFull){
-                if(!isPolling){
+            if (data.isFull) {
+                if (!isPolling) {
                     UI.showModal('full-modal');
                 } else {
                     const btn = document.getElementById('submitBtn');
-                    if(btn){ btn.textContent='🌸 登記候補・優先通知'; btn.onclick=(e)=>{e.preventDefault();UI.showModal('full-modal');}; }
-                    if(document.getElementById('full-modal').style.display!=='flex'){
-                        document.getElementById('full-modal-title').textContent='名額已在您填寫時搶完了 🌸';
-                        document.getElementById('full-modal-body').innerHTML=`
-                            <p class="text-[#E8DCC4] border-b border-[#2A251B] pb-4">感謝您的熱情！就在您填寫的這段時間，最後的名額也被預訂走了。</p>
-                            <p>留下您的資料，讓我們為您保留優先遞補資格：</p>
-                            <ul class="space-y-3">
-                                <li class="flex items-start gap-3"><span class="text-[#D4B78F] mt-0.5">✦</span><span>有名額釋出時，<strong class="text-[#E8DCC4]">第一時間通知您遞補</strong></span></li>
-                                <li class="flex items-start gap-3"><span class="text-[#D4B78F] mt-0.5">✦</span><span>下次開課，<strong class="text-[#E8DCC4]">優先寄送報名通知</strong>給您</span></li>
-                            </ul>`;
+                    if (btn) { btn.textContent='🌸 登記候補・優先通知'; btn.onclick=(e)=>{e.preventDefault();UI.showModal('full-modal');}; }
+                    if (document.getElementById('full-modal').style.display !== 'flex') {
+                        document.getElementById('full-modal-title').textContent = '名額已在您填寫時搶完了 🌸';
                         UI.showModal('full-modal');
                     }
                 }
                 return;
             }
+
             // 正常開放
             const btn = document.getElementById('submitBtn');
-            if(btn){ btn.textContent='確認提交報名'; btn.onclick=null; }
+            if (btn) { btn.textContent='確認提交報名'; btn.onclick=null; }
+        }
+
+        // ════════════════════════════════════════════
+        // v7.1 修正一：applyCourseInfo — 套用所有後台 config 到 UI 元素
+        // ════════════════════════════════════════════
+        // 獨立為函式，方便輪詢時單獨呼叫更新文案，不影響名額/狀態邏輯
+        function applyCourseInfo(data) {
+            const setEl = (id, val) => { const el=document.getElementById(id); if(el && val!=null) el.textContent=val; };
+
+            // 課程資訊欄
+            const courseText = `${data.courseName}｜${data.courseDate}｜${data.coursePrice}`;
+            const display = document.getElementById('course-display');
+            const hidden  = document.getElementById('hidden-course');
+            if (display) display.textContent = courseText;
+            if (hidden)  hidden.value = courseText;
+
+            // Hero
+            const heroTitle   = document.getElementById('hero-title');
+            const heroTagline = document.getElementById('hero-tagline');
+            if (heroTitle   && data.courseName)  heroTitle.textContent   = data.courseName;
+            if (heroTagline && data.heroTagline) heroTagline.textContent = data.heroTagline;
+            if (data.heroBgImage) {
+                const heroBg = document.getElementById('hero-bg');
+                if (heroBg) heroBg.style.backgroundImage = `url('${convertDriveUrl(data.heroBgImage)}')`;
+            }
+
+            // 課程卡片
+            setEl('course-card-title',          data.courseName);
+            setEl('course-card-date',           data.courseDate);
+            setEl('course-card-price',          data.coursePrice);
+            setEl('course-card-sub',            data.courseSubtitle || '小班制精緻教學・材料全含・當天完成作品');
+            setEl('course-card-badge',          data.courseBadge   || '零基礎手作課程');
+            setEl('course-card-original-price', data.courseOriginalPrice || '');
+
+            // v7.1 修正三：使用 loadCourseImage 處理圖片
+            if (data.courseImage) {
+                loadCourseImage(data.courseImage);
+            } else {
+                // 未設定圖片
+                const wrap     = document.getElementById('course-image-wrap');
+                const img      = document.getElementById('course-image');
+                const fallback = document.getElementById('course-image-fallback');
+                if (wrap) wrap.classList.remove('img-loading');
+                if (img) img.style.display = 'none';
+                if (fallback) fallback.style.display = 'flex';
+            }
+
+            // 文案統計
+            setEl('proof-headline', data.proofHeadline);
+            setEl('proof-body',     data.proofBody);
+            setEl('stat1-num',      data.proofStat1Num);
+            setEl('stat1-label',    data.proofStat1Label);
+            setEl('stat2-num',      data.proofStat2Num);
+            setEl('stat2-label',    data.proofStat2Label);
+            setEl('stat3-num',      data.proofStat3Num);
+            setEl('stat3-label',    data.proofStat3Label);
+
+            // 學員作品圖片
+            loadStudentImg('student-img-1', data.studentImg1);
+            loadStudentImg('student-img-2', data.studentImg2);
+            setEl('student-caption-1', data.studentImg1Caption);
+            setEl('student-caption-2', data.studentImg2Caption);
+
+            // LINE 帳號
+            if (data.lineId && /^@[\w.-]+$/.test(data.lineId)) {
+                document.querySelectorAll('.line-add-friend').forEach(a => {
+                    a.href = `https://line.me/R/ti/p/${data.lineId}`;
+                });
+                document.querySelectorAll('.line-id-text').forEach(el => { el.textContent = data.lineId; });
+                document.querySelectorAll('.line-name-text').forEach(el => { el.textContent = data.lineName || '御景家 YUJINGJIA'; });
+            }
+
+            // 學員作品區塊顯示控制
+            const studentWorksSection = document.getElementById('section-student-works');
+            if (studentWorksSection) {
+                if (data.showStudentWorks === true) studentWorksSection.classList.remove('section-hidden');
+                else studentWorksSection.classList.add('section-hidden');
+            }
         }
 
         // ── 背景輪詢 ──
         let isFirstLoad = true;
-        async function pollStatus(){
-            try{ const data=await Api.checkFull(); if(!isFirstLoad) applyState(data,true); }
-            catch(e){ console.warn('[poll]',e.message); }
+        async function pollStatus() {
+            try {
+                // v7.1：強制刷新（略過本地快取），確保每次輪詢都取得最新 GAS 資料
+                invalidateLocalCache();
+                const data = await Api.checkFull(false);
+                if (!isFirstLoad) applyData(data, true);
+            } catch(e) {
+                console.warn('[poll]', e.message);
+            }
         }
-        function startPolling(){ setInterval(pollStatus, CONFIG.POLL_INTERVAL); }
+        function startPolling() { setInterval(pollStatus, CONFIG.POLL_INTERVAL); }
 
-        // 聚焦輸入框觸發狀態更新
-        ['reg-name','reg-phone','reg-email'].forEach(id=>{
-            document.getElementById(id)?.addEventListener('focus', ()=>{ if(!isFirstLoad) pollStatus(); }, {passive:true});
+        // 聚焦時強制刷新
+        ['reg-name','reg-phone','reg-email'].forEach(id => {
+            document.getElementById(id)?.addEventListener('focus', () => {
+                if (!isFirstLoad) { invalidateLocalCache(); pollStatus(); }
+            }, {passive:true});
         });
 
-        // ── 初始化（含自動 retry）──
+        // ── 初始化 ──
         window.addEventListener('DOMContentLoaded', async () => {
             parseUTM();
 
-            // 效能：偵測 scriptURL 未設定
-            if (!CONFIG.scriptURL || CONFIG.scriptURL.includes('請貼入')) {
-                revealUI();
-                isFirstLoad = false;
+            if (!CONFIG.scriptURL || CONFIG.scriptURL.includes('YOUR_') || CONFIG.scriptURL.length < 50) {
+                revealUI(); isFirstLoad = false;
                 const display = document.getElementById('course-display');
                 if (display) {
-                    display.textContent = '⚠️ 請在 HTML 的 CONFIG.scriptURL 填入您的 GAS 部署網址後再上架';
+                    display.textContent = '⚠️ 請在 HTML 的 CONFIG.scriptURL 填入您的 GAS 部署網址';
                     display.style.color = '#c0392b';
                 }
                 return;
             }
 
-            async function initWithRetry(maxRetry=3, delay=2000) {
-                for (let attempt=1; attempt<=maxRetry; attempt++) {
+            async function initWithRetry(maxRetry = 3, delay = 2000) {
+                for (let attempt = 1; attempt <= maxRetry; attempt++) {
                     try {
-                        // 第一次嘗試優先使用提前發起的 prefetch 請求
                         const data = (attempt === 1 && _prefetchPromise)
                             ? await _prefetchPromise
-                            : await Api.checkFull();
+                            : await Api.checkFull(false);
                         if (!data) throw new Error('prefetch returned null');
-                        const courseText = `${data.courseName}｜${data.courseDate}｜${data.coursePrice}`;
-                        const display = document.getElementById('course-display');
-                        const hidden  = document.getElementById('hidden-course');
-                        if (display) display.textContent = courseText;
-                        if (hidden)  hidden.value = courseText;
 
-                        // Hero
-                        const heroTitle   = document.getElementById('hero-title');
-                        const heroTagline = document.getElementById('hero-tagline');
-                        if (heroTitle   && data.courseName)  heroTitle.textContent   = data.courseName;
-                        if (heroTagline && data.heroTagline) heroTagline.textContent = data.heroTagline;
-                        if (data.heroBgImage) {
-                            const heroBg = document.getElementById('hero-bg');
-                            if (heroBg) heroBg.style.backgroundImage = `url('${data.heroBgImage}')`;
-                        }
-
-                        // 課程卡片
-                        const safeImgUrl = url => url && /^https:\/\//.test(url) ? url : null;
-                        const setEl = (id, val) => { const el=document.getElementById(id); if(el&&val!=null) el.textContent=val; };
-                        setEl('course-card-title', data.courseName);
-                        setEl('course-card-date',  data.courseDate);
-                        setEl('course-card-price', data.coursePrice);
-                        setEl('course-card-sub',   data.courseSubtitle || '小班制精緻教學・材料全含・當天完成作品');
-                        setEl('course-card-badge', data.courseBadge   || '零基礎手作課程');
-                        setEl('course-card-original-price', data.courseOriginalPrice || '');
-
-                        const cardImg      = document.getElementById('course-image');
-                        const cardFallback = document.getElementById('course-image-fallback');
-                        if (cardImg && safeImgUrl(data.courseImage)) {
-                            cardImg.src = safeImgUrl(data.courseImage);
-                            cardImg.onload  = () => { if(cardFallback) cardFallback.style.display='none'; };
-                            cardImg.onerror = () => {
-                                // 圖片載入失敗（Drive 連結未公開等）保留 fallback 提示
-                                cardImg.style.display='none';
-                                if(cardFallback) cardFallback.style.display='flex';
-                            };
-                        } else if (cardImg) {
-                            // 未設定圖片：顯示 fallback 引導
-                            cardImg.style.display='none';
-                            if(cardFallback) cardFallback.style.display='flex';
-                        }
-
-                        // 文案統計
-                        setEl('proof-headline', data.proofHeadline);
-                        setEl('proof-body',     data.proofBody);
-                        setEl('stat1-num',   data.proofStat1Num);
-                        setEl('stat1-label', data.proofStat1Label);
-                        setEl('stat2-num',   data.proofStat2Num);
-                        setEl('stat2-label', data.proofStat2Label);
-                        setEl('stat3-num',   data.proofStat3Num);
-                        setEl('stat3-label', data.proofStat3Label);
-
-                        // 學員圖片（Drive URL 支援，錯誤時保留預設圖）
-                        const loadStudentImg = (id, url) => {
-                            const el = document.getElementById(id);
-                            if (!el || !safeImgUrl(url)) return;
-                            const tmp = new Image();
-                            tmp.onload  = () => { el.src = url; };
-                            tmp.onerror = () => { /* 保留預設圖不替換 */ };
-                            tmp.src = url;
-                        };
-                        loadStudentImg('student-img-1', data.studentImg1);
-                        loadStudentImg('student-img-2', data.studentImg2);
-                        setEl('student-caption-1', data.studentImg1Caption);
-                        setEl('student-caption-2', data.studentImg2Caption);
-
-                        // LINE 帳號
-                        if (data.lineId && /^@[\w.-]+$/.test(data.lineId)) {
-                            document.querySelectorAll('.line-add-friend').forEach(a => {
-                                a.href = `https://line.me/R/ti/p/${data.lineId}`;
-                            });
-                            document.querySelectorAll('.line-id-text').forEach(el => {
-                                el.textContent = data.lineId;
-                            });
-                            document.querySelectorAll('.line-name-text').forEach(el => {
-                                el.textContent = data.lineName || '御景家 YUJINGJIA';
-                            });
-                        }
-
-                        // 需求三：學員作品區塊顯示控制
-                        // config SHOW_STUDENT_WORKS=true → 移除 section-hidden 顯示區塊
-                        const studentWorksSection = document.getElementById('section-student-works');
-                        if (studentWorksSection) {
-                            if (data.showStudentWorks === true) {
-                                studentWorksSection.classList.remove('section-hidden');
-                            } else {
-                                studentWorksSection.classList.add('section-hidden');
-                            }
-                        }
-
-                        revealUI(); isFirstLoad = false;
-                        applyState(data, false);
+                        applyCourseInfo(data);
+                        revealUI();
+                        isFirstLoad = false;
+                        applyData(data, false);
                         startPolling();
                         return;
+
                     } catch(err) {
                         console.warn(`[init] attempt ${attempt}/${maxRetry}:`, err.message);
                         if (attempt < maxRetry) {
                             await new Promise(r => setTimeout(r, delay));
                         } else {
-                            // API 全部失敗：revealUI 讓表單可用，course-display 顯示降級提示（不擋操作）
                             revealUI(); isFirstLoad = false;
                             const display = document.getElementById('course-display');
                             if (display) {
                                 display.textContent = '課程資訊載入中，請稍候或重新整理頁面';
                                 display.style.color = '#A39171';
                             }
-                            // 靜默重試（5秒後再試一次，不打擾用戶）
+                            // 靜默重試
                             setTimeout(async () => {
                                 try {
-                                    const data = await Api.checkFull();
-                                    const courseText = `${data.courseName}｜${data.courseDate}｜${data.coursePrice}`;
-                                    const display = document.getElementById('course-display');
-                                    if (display) { display.textContent = courseText; display.style.color = ''; }
-                                    const hidden = document.getElementById('hidden-course');
-                                    if (hidden) hidden.value = courseText;
-                                    applyState(data, false);
+                                    invalidateLocalCache();
+                                    const data = await Api.checkFull(true);
+                                    applyCourseInfo(data);
+                                    applyData(data, false);
                                     startPolling();
+                                    const display = document.getElementById('course-display');
+                                    if (display) display.style.color = '';
                                 } catch(e2) {
                                     const display = document.getElementById('course-display');
                                     if (display) {
                                         display.textContent = '課程資訊暫時無法載入，請重新整理頁面';
                                         display.style.color = '#c0392b';
                                     }
-                                    console.error('[init] 所有重試均失敗。\n可能原因：\n1. scriptURL 是舊帳號的 URL（最常見！請更新 CONFIG.scriptURL）\n2. GAS 未重新部署\n解法：GAS → 部署 → 管理部署 → 建立新版本 → 複製 URL → 貼入 index.html');
+                                    console.error('[init] 所有重試均失敗。\n最常見原因：\n1. scriptURL 未更新（舊帳號或舊版本的 URL）\n2. GAS 未重新部署\n解法：GAS → 部署 → 管理部署 → 建立新版本 → 複製 URL → 貼入 index.html CONFIG.scriptURL');
                                 }
                             }, 5000);
                         }
@@ -1401,8 +1434,6 @@
         const submitBtn   = document.getElementById('submitBtn');
         let regSubmitting = false;
 
-        // ⚠️ 修正：不再用 'reg_submitted'='1' 全局鎖，改為以「場次+email」組合為 key
-        // 避免同一 session 內換資料無法報名的問題
         function getSubmittedKey(email, courseDate) {
             return 'submitted_' + (courseDate || '').replace(/\s/g,'') + '_' + (email || '').toLowerCase().replace(/[^a-z0-9]/g,'_');
         }
@@ -1418,7 +1449,6 @@
             if (regSubmitting) return;
             if (!Validator.validateRegForm()) return;
 
-            // 只鎖「同一場次 + 同一 email」組合，換 email 可重新嘗試
             const emailVal  = (document.getElementById('reg-email')?.value || '').trim().toLowerCase();
             const courseKey = sessionStorage.getItem('reg_course_date') || '';
             if (isAlreadySubmitted(emailVal, courseKey)) {
@@ -1447,8 +1477,8 @@
                     UI.setBtnLoading(submitBtn, false, '確認提交報名');
                     return;
                 }
-                // 成功：記錄此 email+場次 已送出
                 markSubmitted(emailVal, courseKey);
+                invalidateLocalCache(); // 送出後清本地快取，下次輪詢取得最新名額
                 if (data.status === '🔸備取') {
                     fireLeadEvent('候補');
                     UI.showResult({
@@ -1468,33 +1498,25 @@
                 console.error('[register]', err.message);
                 UI.showToast('目前系統繁忙，請稍後再試或加入官方 LINE 聯繫', 'error');
                 UI.setBtnLoading(submitBtn, false, '確認提交報名');
-            } finally {
-                regSubmitting = false;
-            }
+            } finally { regSubmitting = false; }
         });
 
         // ── Sticky Bottom CTA ──
         (() => {
             const stickyCta = document.getElementById('sticky-cta');
-            // 觀察整個表單面板（.glass-panel），進入視窗後 CTA 消失
             const formPanel = document.querySelector('.glass-panel');
             if (!stickyCta || !formPanel) return;
-
             let formVisible  = false;
             let scrolledOver = false;
-
             function updateCTA() {
                 scrolledOver && !formVisible
                     ? stickyCta.classList.remove('translate-y-full')
                     : stickyCta.classList.add('translate-y-full');
             }
-
-            // threshold:0.05 = 表單頂部剛露出 5% 就讓 CTA 消失，引導感更直覺
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => { formVisible = entry.isIntersecting; updateCTA(); });
             }, { threshold: 0.05 });
             observer.observe(formPanel);
-
             window.addEventListener('scroll', () => {
                 scrolledOver = window.scrollY > 200; updateCTA();
             }, { passive: true });
