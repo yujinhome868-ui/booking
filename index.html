@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- index_v74.html — v7.4
+<!-- index_v74.html — v7.5
      御景家報名系統 完整版（FB/IG/TikTok 廣告投放就緒）
      ✅ 圖片修正（根本原因）：
         → 舊版用 new Image() + crossOrigin="anonymous" 預測試
@@ -1475,7 +1475,7 @@
                     UI.showResult({ title:'候補登記成功 🌸', desc:'<p class="text-center">您已列入候補名單！<br>候補確認信已寄至您的信箱。<br><br>一旦有名額釋出將依序優先通知您，<br>感謝您的耐心，期待與您在花香中相聚 🌺</p>', icon:'fa-solid fa-envelope-open-text text-[#12110F] text-2xl' });
                 } else {
                     fireLeadEvent('正取');
-                    UI.showResult({ title:'報名正式成功 🎉', desc:'<p class="text-center">恭喜您！席次已為您保留。<br>確認信已寄至您的信箱，請查收。<br><br>⚠️ <strong>重要</strong>：請於 24 小時內加入官方 LINE，<br>回傳「您的姓名 + 確認參加」以正式保留席次。<br><br>請於課程當天攜帶現金至現場繳費，<br>我們非常期待與您相見 🌸</p>', icon:'fa-solid fa-check text-[#12110F] text-2xl' });
+                    UI.showResult({ title:'報名正式成功 🎉', desc:'<p class="text-center">恭喜您！席次已為您保留。<br>確認信已寄至您的信箱，請查收。<br><br>⚠️ <strong style=\'color:#D4B78F\'>重要</strong>：請於 24 小時內加入官方 LINE，<br>傳送「<strong>您的姓名 + 確認參加</strong>」以正式保留席次。<br><br><a href=\'https://line.me/ti/p/@886cnhiz\' target=\'_blank\' style=\'display:inline-block;margin-top:0.75rem;padding:0.65rem 1.75rem;background:#06C755;color:#fff;font-weight:700;font-size:0.85rem;text-decoration:none;border-radius:9999px;\'>加入 LINE 確認席次</a></p>', icon:'fa-solid fa-check text-[#12110F] text-2xl' });
                 }
             }).catch(function(err) {
                 console.error('[register]', err.message);
