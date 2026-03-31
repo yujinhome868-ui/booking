@@ -1,22 +1,22 @@
 <!DOCTYPE html>
-<!-- index_v76.html — v7.6
-     御景家報名系統 完整版（FB/IG/TikTok 廣告投放就緒）
+<!-- index_v8.html — v8.0
+     御景家報名系統 完整版
 
-     ✅ v7.6 修正：
-     【問題一】備取→正取 / 取消信無法重寄
-       → GAS onEditStatusChange 全面重寫 L 欄狀態機
-       → 備取改正取：發「升等信」而非跳過
-       → 取消信：每次改取消都發，不防重複
+     ✅ v8.0 修正：
+     【修正一】完全取消確認回傳機制
+       → 移除所有 L 欄確認狀態邏輯
+       → 移除「請加入 LINE 確認席次」等確認提示
 
-     【問題二】刪除資料後仍顯示「已報名」
-       → 根本原因：前端 sessionStorage 快取了報名狀態
-       → 修正：移除 sessionStorage 的 isAlreadySubmitted / markSubmitted
-       → 改由後端資料庫做唯一性判斷（更可靠、刪除立即生效）
+     【修正二】G 欄狀態改變即寄信（由 GAS onStatusEdit 處理）
+       → 不管原本欄位狀態，只要改變就寄對應信
 
-     【問題三】UX 改善
-       → 重複報名錯誤訊息更友善，顯示具體原因
-       → 取消後可重新報名（後端 isDuplicate 排除 ❌取消）
-       → 保留所有既有視覺、動畫、骨架屏等功能不變
+     【修正三】表單送出直接顯示「報名成功」
+       → 取消回傳姓名+確認參加等訊息
+       → 成功彈窗改為純粹的「報名成功」提示
+
+     【修正四】Email 簡化
+       → 取消確認資格欄位連結
+       → 正取信只顯示課程資訊
 -->
 <html lang="zh-TW">
 <head>
@@ -98,7 +98,6 @@
                 radial-gradient(circle at 50% 50%, rgba(212,183,143,0.05) 0%, transparent 50%);
             background-size: 40px 40px, 100% 100%;
         }
-
         .skeleton {
             background: linear-gradient(90deg, #1a1814 25%, #262219 50%, #1a1814 75%);
             background-size: 200% 100%;
@@ -634,7 +633,7 @@
                         </label>
                         <div id="sk-email" class="skeleton skeleton-block rounded-xl"></div>
                         <input type="email" name="email" id="reg-email" required autocomplete="email"
-                            class="w-full px-5 py-4 rounded-xl text-sm" placeholder="將用於寄送確認信與通知" style="display:none">
+                            class="w-full px-5 py-4 rounded-xl text-sm" placeholder="將用於寄送課程確認信" style="display:none">
                         <p class="error-msg" id="err-reg-email">請輸入有效的 Email 格式</p>
                     </div>
 
@@ -700,7 +699,6 @@
                         </button>
                         ，您的資料僅用於課程報名聯繫用途。
                     </p>
-                    <p class="text-center text-xs text-[#3A3225]/70 mt-2 tracking-wider">正取後請於 24 小時內加入 LINE 確認席次：<a href="https://line.me/ti/p/@886cnhiz" target="_blank" rel="noopener" style="color:#A39171;text-decoration:underline;">@886cnhiz</a></p>
                     <p class="text-center text-xs text-[#3A3225] mt-2 tracking-widest">© YUJINGJIA ART STUDIO EST. 2024</p>
                 </div>
             </form>
@@ -796,7 +794,7 @@
         </div>
     </div>
 
-    <!-- 成功彈窗 -->
+    <!-- ✅ v8 成功彈窗：直接告知報名成功，無確認機制 -->
     <div id="success-modal" class="fixed inset-0 z-[100]" style="display:none;align-items:center;justify-content:center;padding:1.5rem">
         <div class="absolute inset-0 bg-black/90 backdrop-blur-xl"></div>
         <div class="bg-[#0D0C0B] border border-[#D4B78F]/30 rounded-[2rem] p-10 md:p-14 max-w-lg w-full relative text-center shadow-[0_0_100px_rgba(0,0,0,1)] animate-fadeInUp modal-glow modal-scroll">
@@ -937,6 +935,7 @@
             showModal: function(id){ document.getElementById(id).style.display='flex'; },
             hideModal: function(id){ document.getElementById(id).style.display='none'; },
             setBtnLoading: function(btn,loading,txt){ btn.disabled=loading; btn.innerHTML=loading?'<span class="btn-spinner"></span>處理中...':txt; },
+            // v8: 成功彈窗簡化，直接告知報名成功
             showResult: function(o){
                 document.getElementById('modalTitle').innerText=o.title;
                 document.getElementById('modalDesc').innerHTML=o.desc;
@@ -1128,13 +1127,6 @@
             }
         }
 
-        // v7.6 修正：移除 sessionStorage courseDate 快取，不再依賴 session 判斷重複
-        // 改由後端 isDuplicate() 資料庫判斷（取消後可重報）
-        function checkAndRefreshSession(courseDate) {
-            // 保留 sessionStorage 只用於存 courseDate（供 poll 使用），不再用於防重複報名
-            try { sessionStorage.setItem('reg_course_date', courseDate); } catch(e) {}
-        }
-
         var _prefetchUsed = false;
         function getPrefetchData() {
             if (!_prefetchUsed && window.__gasPrefetchData) {
@@ -1157,7 +1149,6 @@
             }
             if (dataVersion > _lastAppliedVersion) _lastAppliedVersion = dataVersion;
             updateSeatsUI(remaining, maxSeats);
-            if (data.courseDate) checkAndRefreshSession(data.courseDate);
             if (data.isFull && maxSeats >= CONFIG.FUSE_THRESHOLD && remaining === 0) {
                 document.getElementById('closed-overlay').classList.add('show');
                 var btn = document.getElementById('submitBtn');
@@ -1317,16 +1308,16 @@
             fd.append('action', CONFIG.actions.WAITLIST);
             Api.post(fd).then(function(res) {
                 if (res.result === 'duplicate') {
-                    // v7.6：更友善的重複提示
-                    UI.showToast('您的電話或 Email 已登記過候補，若需修改請加入官方 LINE 聯繫。', 'info');
+                    UI.showToast('您的電話或 Email 已登記過候補，如需修改請加入官方 LINE 聯繫。', 'info');
                     UI.setBtnLoading(waitlistBtn, false, '🌸 保留候補資格・優先通知我');
                     return;
                 }
                 fireLeadEvent('候補');
                 UI.hideModal('full-modal');
+                // v8: 成功訊息簡化，不含確認機制
                 UI.showResult({
                     title:'已列入候補名單 🌸',
-                    desc:'<p class="text-center">您的候補資格已登記成功！<br>確認信已寄至您的信箱。<br><br>一旦有名額釋出，我們將第一時間通知您。<br>感謝您的耐心等候，期待與您相聚 🌺</p>',
+                    desc:'<p class="text-center">您的候補資格已登記成功！<br>確認信已寄至您的信箱，請查收。<br><br>一旦有名額釋出，我們將第一時間通知您。<br>感謝您的耐心等候，期待與您相聚 🌺</p>',
                     icon:'fa-solid fa-envelope-open-text text-[#12110F] text-2xl'
                 });
                 waitlistForm.reset();
@@ -1338,9 +1329,9 @@
         });
 
         // ── 正式報名送出 ──
-        // v7.6 核心修正：
-        //   移除 isAlreadySubmitted / markSubmitted（sessionStorage 快取）
-        //   改由後端資料庫判斷重複（刪除後立即可重報，取消後也可重報）
+        // v8 核心修正：
+        //   送出後直接告知「報名成功」
+        //   不顯示任何確認機制、加LINE確認席次等訊息
         var bookingForm=document.getElementById('bookingForm'), submitBtn=document.getElementById('submitBtn');
         var regSubmitting = false;
 
@@ -1349,14 +1340,12 @@
             if (regSubmitting) return;
             if (!Validator.validateRegForm()) return;
 
-            // v7.6：不再有 sessionStorage 防重複，直接送後端
             regSubmitting = true;
             UI.setBtnLoading(submitBtn, true, '確認提交報名');
             var fd = new FormData(bookingForm);
             fd.append('action', CONFIG.actions.REGISTER);
             Api.post(fd).then(function(data) {
                 if (data.result === 'duplicate') {
-                    // v7.6：後端回傳的具體說明（含加LINE指引）
                     UI.showToast(data.message || '此電話或 Email 已報名本場次，如需修改請加入官方 LINE 聯繫。', 'info');
                     UI.setBtnLoading(submitBtn, false, '確認提交報名');
                     return;
@@ -1371,14 +1360,25 @@
                     UI.setBtnLoading(submitBtn, false, '確認提交報名');
                     return;
                 }
-                // 成功：清除本地快取，讓名額即時更新
+                // 成功：清除快取，名額即時更新
                 invalidateLocalCache();
+
+                // v8: 根據狀態顯示簡潔成功訊息，無確認機制
                 if (data.status === '🔸備取') {
                     fireLeadEvent('候補');
-                    UI.showResult({ title:'候補登記成功 🌸', desc:'<p class="text-center">您已列入候補名單！<br>候補確認信已寄至您的信箱。<br><br>一旦有名額釋出將依序優先通知您，<br>感謝您的耐心，期待與您在花香中相聚 🌺</p>', icon:'fa-solid fa-envelope-open-text text-[#12110F] text-2xl' });
+                    UI.showResult({
+                        title:'候補登記成功 🌸',
+                        desc:'<p class="text-center">您已列入候補名單！<br>候補確認信已寄至您的信箱，請查收。<br><br>一旦有名額釋出將依序優先通知您，<br>感謝您的耐心，期待與您在花香中相聚 🌺</p>',
+                        icon:'fa-solid fa-envelope-open-text text-[#12110F] text-2xl'
+                    });
                 } else {
                     fireLeadEvent('正取');
-                    UI.showResult({ title:'報名正式成功 🎉', desc:'<p class="text-center">恭喜您！席次已為您保留。<br>確認信已寄至您的信箱，請查收。<br><br>⚠️ <strong style=\'color:#D4B78F\'>重要</strong>：請於 24 小時內加入官方 LINE，<br>傳送「<strong>您的姓名 + 確認參加</strong>」以正式保留席次。<br><br><a href=\'https://line.me/ti/p/@886cnhiz\' target=\'_blank\' style=\'display:inline-block;margin-top:0.75rem;padding:0.65rem 1.75rem;background:#06C755;color:#fff;font-weight:700;font-size:0.85rem;text-decoration:none;border-radius:9999px;\'>加入 LINE 確認席次</a></p>', icon:'fa-solid fa-check text-[#12110F] text-2xl' });
+                    // v8: 正取訊息不含「請加入LINE確認」
+                    UI.showResult({
+                        title:'報名成功 🎉',
+                        desc:'<p class="text-center">恭喜您！席次已為您保留。<br>課程確認信已寄至您的信箱，請查收。<br><br>如有任何問題，歡迎加入官方 LINE 聯繫 🌸</p>',
+                        icon:'fa-solid fa-check text-[#12110F] text-2xl'
+                    });
                 }
             }).catch(function(err) {
                 console.error('[register]', err.message);
