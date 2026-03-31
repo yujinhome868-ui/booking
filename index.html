@@ -1,22 +1,9 @@
 <!DOCTYPE html>
-<!-- index_v8.html — v8.0
-     御景家報名系統 完整版
-
-     ✅ v8.0 修正：
-     【修正一】完全取消確認回傳機制
-       → 移除所有 L 欄確認狀態邏輯
-       → 移除「請加入 LINE 確認席次」等確認提示
-
-     【修正二】G 欄狀態改變即寄信（由 GAS onStatusEdit 處理）
-       → 不管原本欄位狀態，只要改變就寄對應信
-
-     【修正三】表單送出直接顯示「報名成功」
-       → 取消回傳姓名+確認參加等訊息
-       → 成功彈窗改為純粹的「報名成功」提示
-
-     【修正四】Email 簡化
-       → 取消確認資格欄位連結
-       → 正取信只顯示課程資訊
+<!-- index_v8.2.html — 御景家報名系統
+     修正：
+     1. 表單關閉/額滿時顯示專屬彈窗（正取備取全數額滿）
+     2. 報名按鈕改為「已額滿」不可點擊
+     3. Sticky CTA 按鈕同步鎖定
 -->
 <html lang="zh-TW">
 <head>
@@ -24,52 +11,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>御景家＿神明花 | 神明花基礎課程報名</title>
     <meta name="description" content="御景家＿神明花基礎課程正式開放報名。專為零基礎學員設計，由淺入深教學，親手完成精緻敬神花藝。立即預約名額。">
-    <meta name="keywords" content="御景家, 神明花, 敬神花, 花藝課程, 手作課程, 神明花報名">
-    <meta name="author" content="御景家 YUJINGJIA">
     <meta name="theme-color" content="#0D0C0B">
     <meta name="color-scheme" content="dark">
     <meta property="og:title" content="御景家＿神明花 | 基礎課程報名登記">
     <meta property="og:description" content="專為零基礎設計的神明花手作課，名額有限，點擊進入報名系統預約席次。">
     <meta property="og:type" content="website">
-    <meta property="og:image" content="https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&q=80&w=1200">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
     <meta property="og:locale" content="zh_TW">
-    <meta property="og:site_name" content="御景家 YUJINGJIA ART STUDIO">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="御景家＿神明花 | 基礎課程報名登記">
-    <meta name="twitter:description" content="專為零基礎設計的神明花手作課，名額有限，點擊進入報名系統預約席次。">
-    <meta name="twitter:image" content="https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&q=80&w=1200">
-    <link rel="canonical" href="">
-    <meta name="referrer" content="origin-when-cross-origin">
 
     <link rel="dns-prefetch" href="https://script.google.com">
-    <link rel="dns-prefetch" href="https://script.googleusercontent.com">
     <link rel="dns-prefetch" href="https://fonts.googleapis.com">
-    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
-    <link rel="dns-prefetch" href="https://drive.google.com">
-    <link rel="dns-prefetch" href="https://lh3.googleusercontent.com">
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://script.google.com">
-    <link rel="preconnect" href="https://script.googleusercontent.com">
-    <link rel="preconnect" href="https://lh3.googleusercontent.com" crossorigin>
 
-    <link rel="preload" as="style"
-          href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap"
-          rel="stylesheet" media="print" onload="this.media='all'">
-    <noscript>
-      <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    </noscript>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet"></noscript>
 
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-          crossorigin="anonymous" referrerpolicy="no-referrer"
-          media="print" onload="this.media='all'">
-    <noscript>
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    </noscript>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></noscript>
 
     <script defer src="https://cdn.tailwindcss.com"></script>
 
@@ -137,17 +96,6 @@
         .course-card-sub { font-size:0.82rem; letter-spacing:0.04em; color:#5C5547; }
         .info-check-item { font-size:0.85rem; color:#A39171; }
         .course-info-display { font-size:0.95rem; }
-        @media (min-width: 640px) {
-            .info-glass-title  { font-size:0.9rem; }
-            .info-glass-body   { font-size:1rem; }
-            .course-card-sub   { font-size:0.88rem; }
-            .info-check-item   { font-size:0.95rem; }
-        }
-        @media (min-width: 768px) {
-            .info-glass-title  { font-size:0.95rem; }
-            .info-glass-body   { font-size:1rem; }
-            .course-card-sub   { font-size:0.9rem; }
-        }
 
         input, select, textarea {
             background-color: rgba(23,21,18,0.8) !important;
@@ -166,6 +114,7 @@
         .error-msg { color:#c0392b; font-size:0.78rem; margin-top:4px; letter-spacing:0.05em; display:none; }
         .error-msg.visible { display:block; }
 
+        /* 正常報名按鈕 */
         .btn-gold {
             position:relative;
             background: linear-gradient(135deg, var(--brand-gold) 0%, var(--brand-gold-dark) 100%);
@@ -181,13 +130,19 @@
             transform:rotate(30deg); transition:left 0.6s ease;
             pointer-events:none;
         }
-        .btn-gold:hover:not(:disabled) {
-            filter:brightness(1.1);
-            box-shadow:0 12px 30px rgba(212,183,143,0.25); transform:translateY(-2px);
-        }
+        .btn-gold:hover:not(:disabled) { filter:brightness(1.1); box-shadow:0 12px 30px rgba(212,183,143,0.25); transform:translateY(-2px); }
         .btn-gold:hover:not(:disabled)::after { left:120%; }
         .btn-gold:disabled { opacity:0.6; cursor:not-allowed; }
-        .btn-gold:not(:disabled) { will-change: transform; }
+
+        /* 額滿按鈕（灰色鎖定） */
+        .btn-full {
+            background: rgba(42,37,27,0.8) !important;
+            color: #5C5547 !important;
+            border: 1px solid rgba(92,85,71,0.3) !important;
+            cursor: not-allowed !important;
+            pointer-events: none !important;
+        }
+
         .btn-spinner {
             display:inline-block; width:14px; height:14px;
             border:2px solid rgba(18,17,15,0.3); border-top-color:#12110F;
@@ -229,7 +184,7 @@
         }
 
         .seats-bar-wrap { height:3px; background:rgba(255,255,255,0.06); border-radius:2px; overflow:hidden; margin-top:0.5rem; }
-        .seats-bar-fill { height:100%; border-radius:2px; background:linear-gradient(90deg,var(--brand-gold),#FF7A35); transition:width 1s cubic-bezier(0.4,0,0.2,1); will-change:width; }
+        .seats-bar-fill { height:100%; border-radius:2px; background:linear-gradient(90deg,var(--brand-gold),#FF7A35); transition:width 1s cubic-bezier(0.4,0,0.2,1); }
 
         .course-info-display {
             background-color:rgba(23,21,18,0.8); border:1px solid var(--brand-accent);
@@ -237,6 +192,7 @@
             padding:1rem 1.25rem; font-size:0.875rem; letter-spacing:0.05em;
         }
 
+        /* 額滿遮罩（表單面板內） */
         #closed-overlay {
             display:none; position:absolute; inset:0;
             background:rgba(13,12,11,0.92);
@@ -265,48 +221,61 @@
         #privacy-wrap  input[type="checkbox"] {
             width:20px !important; height:20px !important;
             min-width:20px; cursor:pointer;
-            accent-color:var(--brand-gold); border-radius:4px;
-            flex-shrink:0;
-            transition:filter 0.3s ease, transform 0.2s ease;
-        }
-        #checkbox-wrap input[type="checkbox"]:checked,
-        #privacy-wrap  input[type="checkbox"]:checked {
-            filter:drop-shadow(0 0 6px rgba(212,183,143,0.5));
-            transform:scale(1.1);
+            accent-color:var(--brand-gold); border-radius:4px; flex-shrink:0;
         }
         #checkbox-wrap, #privacy-wrap {
-            padding:0.6rem 0.5rem 0.6rem 0;
-            margin-left:-0.5rem; border-radius:0.75rem;
+            padding:0.6rem 0.5rem 0.6rem 0; margin-left:-0.5rem; border-radius:0.75rem;
             transition:background-color 0.3s ease;
         }
-        #checkbox-wrap:hover, #privacy-wrap:hover {
-            background-color:rgba(212,183,143,0.04);
-        }
-        #checkbox-wrap:has(input:checked) span,
-        #privacy-wrap:has(input:checked)  span {
-            color:var(--brand-gold) !important;
-        }
+        #checkbox-wrap:hover, #privacy-wrap:hover { background-color:rgba(212,183,143,0.04); }
 
         .section-hidden { display:none !important; }
 
         .img-loading {
             background: linear-gradient(90deg, #1a1814 25%, #262219 50%, #1a1814 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.6s infinite;
+            background-size: 200% 100%; animation: shimmer 1.6s infinite;
         }
         .img-error-fallback {
-            display:flex; flex-direction:column;
-            align-items:center; justify-content:center;
+            display:flex; flex-direction:column; align-items:center; justify-content:center;
             gap:0.5rem; padding:1rem;
             background:linear-gradient(135deg,#1a1814 0%,#2A251B 100%);
-            color:#3A3225; font-size:0.75rem; text-align:center;
-            width:100%; height:100%;
+            color:#3A3225; font-size:0.75rem; text-align:center; width:100%; height:100%;
         }
-        .img-guide-badge {
-            display:inline-flex; align-items:center; gap:0.35rem;
-            font-size:0.7rem; letter-spacing:0.08em; color:#5C5547;
-            background:rgba(22,20,18,0.8); border:1px solid rgba(42,37,27,0.8);
-            border-radius:9999px; padding:0.2rem 0.6rem; margin-top:0.4rem;
+
+        /* ════════════════════════════════
+           額滿彈窗（全新設計）
+           當 FORM_OPEN=FALSE 或名額已滿時顯示
+        ════════════════════════════════ */
+        #full-closed-modal {
+            display:none;
+            position:fixed; inset:0; z-index:200;
+            align-items:center; justify-content:center; padding:1.5rem;
+        }
+        #full-closed-modal.show { display:flex; }
+        #full-closed-modal .modal-backdrop {
+            position:absolute; inset:0;
+            background:rgba(0,0,0,0.95);
+            backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+        }
+        #full-closed-modal .modal-box {
+            position:relative; z-index:1;
+            background:#0D0C0B;
+            border:1px solid rgba(212,183,143,0.25);
+            border-radius:2rem;
+            padding:2.5rem 2rem;
+            max-width:480px; width:100%;
+            text-align:center;
+            box-shadow:0 0 120px rgba(0,0,0,1);
+            animation:fadeInUp 0.6s cubic-bezier(0.16,1,0.3,1) forwards;
+            max-height:90vh; overflow-y:auto;
+        }
+        .full-icon-wrap {
+            width:72px; height:72px;
+            border-radius:50%;
+            border:1px solid rgba(212,183,143,0.3);
+            display:flex; align-items:center; justify-content:center;
+            margin:0 auto 1.5rem;
+            background:rgba(212,183,143,0.06);
         }
 
         #config-sync-indicator {
@@ -314,45 +283,15 @@
             right:1rem; z-index:200;
             background:rgba(13,12,11,0.95); border:1px solid rgba(212,183,143,0.2);
             border-radius:0.75rem; padding:0.5rem 0.75rem;
-            font-size:0.7rem; color:#A39171; letter-spacing:0.05em;
+            font-size:0.7rem; color:#A39171;
             opacity:0; transition:opacity 0.3s ease; pointer-events:none;
         }
         #config-sync-indicator.show { opacity:1; }
     </style>
 
-    <!-- ════ Facebook Pixel（廣告投放時取消下方注釋並填入你的 Pixel ID）════
-    <script>
-    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
-    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
-    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
-    document,'script','https://connect.facebook.net/en_US/fbevents.js');
-    fbq('init', 'YOUR_PIXEL_ID');
-    fbq('track', 'PageView');
-    </script>
-    <noscript><img height="1" width="1" style="display:none"
-    src="https://www.facebook.com/tr?id=YOUR_PIXEL_ID&ev=PageView&noscript=1"/></noscript>
-    -->
-    <!-- ════ TikTok Pixel（廣告投放時取消下方注釋並填入你的 Pixel ID）════
-    <script>
-    !function (w, d, t) {
-      w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify",
-      "instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"],
-      ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};
-      for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);
-      ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)
-      ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var i="https://analytics.tiktok.com/i18n/pixel/events.js";
-      ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=i,ttq._t=ttq._t||{},ttq._t[e]=+new Date,
-      ttq._o=ttq._o||{},ttq._o[e]=n||{};var o=document.createElement("script");o.type="text/javascript";
-      o.async=!0;o.src=i+"?sdkid="+e+"&lib="+t;var a=document.getElementsByTagName("script")[0];
-      a.parentNode.insertBefore(o,a)};ttq.load('YOUR_TIKTOK_PIXEL_ID');ttq.page();
-    }(window, document, 'ttq');
-    </script>
-    -->
-
     <script>
     (function() {
-        var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1z6VkJTlKom6nQGWjBdNaJ5Ef1W9jjTTL5q39AyiJXPYEcCuS8dD_owBo7rN_LYyy/exec';
+        var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxj3oGPP5Ck0EwnThYWo_d8BVjlf4MCiE2cby5WusM_504oV_Rz7OFAQw2Qjgxba0Pf/exec';
         var cbName = '__gas_prefetch_' + Date.now();
         window[cbName] = function(data) {
             window.__gasPrefetchData = data;
@@ -383,7 +322,7 @@
                     <span class="text-xs tracking-[0.4em] text-[#5C5547] uppercase -mt-1 font-light">YUJINGJIA ART STUDIO</span>
                 </div>
             </div>
-            <div class="flex gap-4 md:gap-6 text-xs md:text-xs tracking-[0.3em] text-[#A39171] uppercase font-light">
+            <div class="flex gap-4 text-xs tracking-[0.3em] text-[#A39171] uppercase font-light">
                 <a href="https://line.me/R/ti/p/@yujingjia" class="line-add-friend" target="_blank" rel="noopener noreferrer"
                    style="display:flex;align-items:center;gap:8px;color:inherit;text-decoration:none;">
                     <i class="fa-brands fa-line text-sm"></i> 加入官方帳號
@@ -403,7 +342,6 @@
             <div id="seats-status-wrap" class="w-full max-w-xs mx-auto mt-1 mb-1" style="display:none">
                 <div class="flex justify-between items-center text-xs tracking-widest text-[#5C5547] uppercase mb-1">
                     <span>Seats Availability</span>
-                    <span id="seats-label" style="display:none"></span>
                 </div>
                 <div class="seats-bar-wrap">
                     <div class="seats-bar-fill" id="seats-bar-fill" style="width:0%"></div>
@@ -419,6 +357,7 @@
     <main class="max-w-3xl mx-auto px-6 relative z-10"
           style="padding-bottom: max(6rem, calc(4rem + env(safe-area-inset-bottom)));">
 
+        <!-- 課程卡骨架 -->
         <div id="sk-course-card" class="rounded-2xl overflow-hidden mb-3">
             <div class="skeleton w-full" style="aspect-ratio:16/9;border-radius:1rem 1rem 0 0;"></div>
             <div class="p-4" style="background:rgba(22,20,18,0.6);border:1px solid rgba(42,37,27,0.8);border-top:none;border-radius:0 0 1rem 1rem;">
@@ -427,25 +366,21 @@
             </div>
         </div>
 
+        <!-- 課程卡 -->
         <div id="course-card" class="rounded-2xl overflow-hidden mb-3 shadow-lg"
              style="display:none;background:rgba(22,20,18,0.75);border:1px solid rgba(42,37,27,0.9);">
             <div class="relative w-full overflow-hidden rounded-t-2xl" style="aspect-ratio:16/9;">
                 <div id="course-image-wrap" class="absolute inset-0 img-loading">
-                    <img id="course-image"
-                         src="" alt="課程圖片"
-                         decoding="async"
-                         fetchpriority="high"
+                    <img id="course-image" src="" alt="課程圖片" decoding="async" fetchpriority="high"
                          class="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 hover:scale-105"
                          style="display:none; opacity:0; transition: opacity 0.4s ease;">
                     <div id="course-image-fallback" class="absolute inset-0 img-error-fallback" style="display:none;">
                         <span style="font-size:1.5rem;">📸</span>
                         <span>請在 config 填入 COURSE_IMAGE</span>
-                        <span class="img-guide-badge">支援 Google Drive 連結</span>
                     </div>
                 </div>
                 <div class="absolute bottom-3 left-3 z-10">
-                    <span id="course-card-badge"
-                          class="px-2.5 py-1 rounded-full text-xs tracking-wider text-[#D4B78F]"
+                    <span id="course-card-badge" class="px-2.5 py-1 rounded-full text-xs tracking-wider text-[#D4B78F]"
                           style="background:rgba(13,12,11,0.85);border:1px solid rgba(212,183,143,0.2);">零基礎手作課程</span>
                 </div>
             </div>
@@ -453,21 +388,19 @@
                 <h3 id="course-card-title" class="font-serif text-base md:text-lg text-[#E8DCC4] tracking-[0.15em] leading-snug mb-0.5"></h3>
                 <p id="course-card-date" class="text-sm text-[#5C5547] tracking-wider mb-2"></p>
                 <div class="flex items-baseline gap-3 mb-1.5">
-                    <span id="course-card-price" class="font-bold text-2xl md:text-3xl"
-                          style="color:var(--brand-gold);font-family:'Playfair Display',serif;letter-spacing:0.02em;"></span>
+                    <span id="course-card-price" class="font-bold text-2xl md:text-3xl" style="color:var(--brand-gold);font-family:'Playfair Display',serif;"></span>
                     <span id="course-card-original-price" class="text-sm line-through tracking-wide" style="color:#4A4438;"></span>
                 </div>
                 <p id="course-card-sub" class="course-card-sub mt-1.5 tracking-wider">小班制精緻教學・材料全含・當天完成作品</p>
             </div>
         </div>
 
+        <!-- 課程說明 -->
         <div id="course-proof-strip" class="info-glass mb-6 px-5 py-4 text-center" style="display:none;">
             <p class="text-[#E8DCC4] text-sm leading-relaxed tracking-wide mb-2">
                 <span id="proof-headline">只要 <span class="text-[#D4B78F] font-medium">3 小時</span>，跟著老師的步驟，你也能親手完成這般精緻的敬神花藝。</span>
             </p>
-            <p id="proof-body" class="text-sm text-[#A39171] leading-relaxed tracking-wider mb-3">
-                課程從零開始教學，不需任何手作基礎。<br>每個步驟老師都會在旁引導，安心完成屬於您的作品。
-            </p>
+            <p id="proof-body" class="text-sm text-[#A39171] leading-relaxed tracking-wider mb-3">課程從零開始教學，不需任何手作基礎。</p>
             <div class="flex justify-center gap-4 sm:gap-6 pt-3 border-t border-[#2A251B]/50">
                 <div class="text-center">
                     <div id="stat1-num" class="text-[#D4B78F] font-serif text-lg">100%</div>
@@ -486,19 +419,12 @@
             </div>
         </div>
 
-        <div id="sk-info-1" class="info-glass mb-2">
-            <div class="info-glass-title"><div class="skeleton skeleton-text w-3/4"></div></div>
-            <div class="info-glass-body"><div class="skeleton skeleton-info"></div></div>
-        </div>
-        <div id="sk-info-2" class="info-glass mb-2">
-            <div class="info-glass-title"><div class="skeleton skeleton-text w-3/4"></div></div>
-            <div class="info-glass-body"><div class="skeleton skeleton-info" style="height:5rem"></div></div>
-        </div>
-        <div id="sk-info-3" class="info-glass mb-6">
-            <div class="info-glass-title"><div class="skeleton skeleton-text w-3/4"></div></div>
-            <div class="info-glass-body"><div class="skeleton skeleton-info"></div></div>
-        </div>
+        <!-- 骨架 -->
+        <div id="sk-info-1" class="info-glass mb-2"><div class="info-glass-title"><div class="skeleton skeleton-text w-3/4"></div></div><div class="info-glass-body"><div class="skeleton skeleton-info"></div></div></div>
+        <div id="sk-info-2" class="info-glass mb-2"><div class="info-glass-title"><div class="skeleton skeleton-text w-3/4"></div></div><div class="info-glass-body"><div class="skeleton skeleton-info" style="height:5rem"></div></div></div>
+        <div id="sk-info-3" class="info-glass mb-6"><div class="info-glass-title"><div class="skeleton skeleton-text w-3/4"></div></div><div class="info-glass-body"><div class="skeleton skeleton-info"></div></div></div>
 
+        <!-- 資訊卡 -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
             <div id="info-card-1" class="info-glass" style="display:none;padding:0.85rem 0.9rem;">
                 <div class="info-glass-title" style="margin-bottom:0.5rem;">
@@ -521,7 +447,6 @@
                 </ul>
             </div>
         </div>
-
         <div class="mb-6">
             <div id="info-card-2" class="info-glass" style="display:none;padding:0.85rem 0.9rem;">
                 <div class="info-glass-title" style="margin-bottom:0.5rem;">
@@ -536,6 +461,7 @@
             </div>
         </div>
 
+        <!-- 學員作品 -->
         <div id="section-student-works" class="mb-6 animate-fadeInUp section-hidden" style="animation-delay:0.15s;">
             <div class="flex items-center gap-4 mb-4">
                 <div class="h-[1px] w-6 bg-gradient-to-r from-transparent to-[#D4B78F]/40"></div>
@@ -545,53 +471,35 @@
             <h3 class="font-serif text-lg md:text-xl text-[#D4B78F] tracking-[0.2em] text-center mb-1">零基礎學員實作參考</h3>
             <p class="text-center text-sm text-[#5C5547] tracking-wider mb-5">跟著老師的步驟，你也能親手完成</p>
             <div class="grid grid-cols-2 gap-3">
-                <div class="group relative overflow-hidden rounded-xl border border-[#2A251B] hover:border-[#D4B78F]/30 transition-all duration-500"
-                     style="background:rgba(22,20,18,0.6);">
+                <div class="group relative overflow-hidden rounded-xl border border-[#2A251B]" style="background:rgba(22,20,18,0.6);">
                     <div class="aspect-[4/5] overflow-hidden">
-                        <img id="student-img-1"
-                             decoding="async" loading="lazy"
+                        <img id="student-img-1" decoding="async" loading="lazy"
                              src="https://images.unsplash.com/photo-1487530811015-780d7d62f1db?auto=format&fit=crop&q=75&w=600"
-                             alt="學員實作作品示意 - 敬神花藝"
-                             class="w-full h-full object-cover object-center opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700">
+                             alt="學員實作作品" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700">
                     </div>
                     <div class="absolute inset-0 bg-gradient-to-t from-[#0D0C0B] via-transparent to-transparent"></div>
                     <div class="absolute bottom-0 left-0 right-0 p-3">
                         <p class="text-xs tracking-[0.2em] text-[#D4B78F] uppercase mb-0.5">Student Work 01</p>
-                        <p id="student-caption-1" class="text-xs text-[#A39171] leading-snug">零基礎・首次上課完成</p>
+                        <p id="student-caption-1" class="text-xs text-[#A39171]">零基礎・首次上課完成</p>
                     </div>
                 </div>
-                <div class="group relative overflow-hidden rounded-xl border border-[#2A251B] hover:border-[#D4B78F]/30 transition-all duration-500"
-                     style="background:rgba(22,20,18,0.6);">
+                <div class="group relative overflow-hidden rounded-xl border border-[#2A251B]" style="background:rgba(22,20,18,0.6);">
                     <div class="aspect-[4/5] overflow-hidden">
-                        <img id="student-img-2"
-                             decoding="async" loading="lazy"
+                        <img id="student-img-2" decoding="async" loading="lazy"
                              src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&q=75&w=600"
-                             alt="學員實作作品示意 - 神明花手作"
-                             class="w-full h-full object-cover object-center opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700">
+                             alt="學員實作作品" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700">
                     </div>
                     <div class="absolute inset-0 bg-gradient-to-t from-[#0D0C0B] via-transparent to-transparent"></div>
                     <div class="absolute bottom-0 left-0 right-0 p-3">
                         <p class="text-xs tracking-[0.2em] text-[#D4B78F] uppercase mb-0.5">Student Work 02</p>
-                        <p id="student-caption-2" class="text-xs text-[#A39171] leading-snug">3 小時・老師全程帶領</p>
+                        <p id="student-caption-2" class="text-xs text-[#A39171]">3 小時・老師全程帶領</p>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- 報名表單 -->
         <div class="glass-panel rounded-3xl p-5 sm:p-8 md:p-14 animate-fadeInUp relative">
-
-            <div id="closed-overlay">
-                <div class="w-16 h-16 rounded-full border border-[#D4B78F]/30 flex items-center justify-center mb-6">
-                    <i class="fa-solid fa-lock text-[#D4B78F] text-xl"></i>
-                </div>
-                <h3 class="text-2xl font-serif text-[#D4B78F] tracking-[0.2em] mb-3">感謝您的熱情支持</h3>
-                <p class="text-[#A39171] text-sm tracking-wider leading-relaxed mb-2">本場次名額已全數額滿 🌸</p>
-                <p class="text-[#5C5547] text-sm leading-relaxed mb-6">下次開課我們會第一時間通知您，<br>期待有機會與您在花香中相聚。</p>
-                <a href="https://line.me/R/ti/p/@yujingjia" class="line-add-friend" target="_blank" rel="noopener noreferrer"
-                   style="display:inline-flex;align-items:center;gap:8px;padding:12px 32px;border-radius:9999px;font-size:0.75rem;font-weight:700;letter-spacing:0.3em;text-transform:uppercase;text-decoration:none;color:#12110F;background:linear-gradient(135deg,#D4B78F,#A38A6A);">
-                    <i class="fa-brands fa-line"></i> 加入官方 LINE・優先收到下次開課通知
-                </a>
-            </div>
 
             <form id="bookingForm" novalidate class="space-y-10">
                 <section class="space-y-8">
@@ -641,9 +549,9 @@
                         <label class="text-sm tracking-[0.2em] text-[#8A8068] uppercase font-medium">課程場次 / Course Info</label>
                         <div id="sk-course" class="skeleton skeleton-block rounded-xl"></div>
                         <div id="course-display" class="course-info-display text-[#D4B78F]" style="display:none">載入中...</div>
-                        <input type="hidden" name="course"       id="hidden-course">
-                        <input type="hidden" name="utm_source"   id="utm_source">
-                        <input type="hidden" name="utm_medium"   id="utm_medium">
+                        <input type="hidden" name="course" id="hidden-course">
+                        <input type="hidden" name="utm_source" id="utm_source">
+                        <input type="hidden" name="utm_medium" id="utm_medium">
                         <input type="hidden" name="utm_campaign" id="utm_campaign">
                     </div>
 
@@ -672,7 +580,7 @@
                                        class="text-[#D4B78F] underline underline-offset-2 cursor-pointer bg-transparent border-none p-0 text-sm font-inherit">
                                        隱私政策
                                     </button>
-                                    收集並使用本人之姓名、電話、Email，僅供課程報名聯繫用途，不對外提供予第三方。
+                                    收集並使用本人之姓名、電話、Email，僅供課程報名聯繫用途。
                                 </span>
                                 <div class="text-xs text-[#8B0000] opacity-80 font-bold uppercase tracking-[0.2em]">*必填 / Required</div>
                             </div>
@@ -683,10 +591,17 @@
 
                 <div id="form-submit-zone">
                     <div id="sk-btn" class="skeleton rounded-2xl" style="height:4rem"></div>
+                    <!-- 報名按鈕（正常狀態） -->
                     <button type="submit" id="submitBtn"
                         class="w-full btn-gold py-6 rounded-2xl text-sm font-bold tracking-[0.5em] uppercase shadow-2xl"
                         style="display:none; min-height:3.75rem;" disabled>
                         確認提交報名
+                    </button>
+                    <!-- 額滿按鈕（鎖定狀態，初始隱藏） -->
+                    <button type="button" id="fullBtn"
+                        class="w-full py-6 rounded-2xl text-sm font-bold tracking-[0.5em] uppercase btn-full"
+                        style="display:none; min-height:3.75rem;" disabled>
+                        <i class="fa-solid fa-lock mr-2 text-xs"></i>本場次已額滿
                     </button>
                     <div id="urgency-bar">
                         <div class="urgency-text">🔥 報名熱烈，目前正取即將額滿，送出將進入候補排隊</div>
@@ -696,14 +611,70 @@
                         <button type="button" onclick="document.getElementById('privacy-modal').style.display='flex'"
                            class="underline underline-offset-2 hover:text-[#D4B78F] transition-colors duration-300 bg-transparent border-none text-[#3A3225] text-xs cursor-pointer p-0">
                            隱私政策
-                        </button>
-                        ，您的資料僅用於課程報名聯繫用途。
+                        </button>，您的資料僅用於課程報名聯繫用途。
                     </p>
                     <p class="text-center text-xs text-[#3A3225] mt-2 tracking-widest">© YUJINGJIA ART STUDIO EST. 2024</p>
                 </div>
             </form>
         </div>
     </main>
+
+
+    <!-- ════════════════════════════════════════════
+         額滿 / 表單關閉彈窗（全新設計）
+         觸發時機：FORM_OPEN=FALSE 或名額全數額滿
+    ════════════════════════════════════════════ -->
+    <div id="full-closed-modal">
+        <div class="modal-backdrop" onclick="closeFullClosedModal()"></div>
+        <div class="modal-box">
+            <!-- icon -->
+            <div class="full-icon-wrap">
+                <i class="fa-solid fa-moon text-[#D4B78F] text-2xl"></i>
+            </div>
+
+            <!-- 標題 -->
+            <h3 class="font-serif text-2xl text-[#D4B78F] tracking-[0.2em] mb-2">感謝您的熱情支持 🌸</h3>
+            <p class="text-[#5C5547] text-xs tracking-[0.3em] uppercase mb-6">本場次正取・備取名額已全數額滿</p>
+
+            <!-- 分隔線 -->
+            <div class="w-16 h-[1px] bg-gradient-to-r from-transparent via-[#D4B78F]/30 to-transparent mx-auto mb-6"></div>
+
+            <!-- 說明文字 -->
+            <p class="text-[#A39171] text-sm leading-relaxed tracking-wider mb-2">
+                非常感謝您對御景家的關注，<br>
+                每一份報名都代表著對花藝的熱忱與支持 🙏
+            </p>
+            <p class="text-[#5C5547] text-sm leading-relaxed tracking-wider mb-8">
+                下次開放報名時段，我們將第一時間<br>
+                透過官方 LINE 發布消息，期待與您相聚 🌺
+            </p>
+
+            <!-- LINE 加入區塊 -->
+            <div class="rounded-2xl p-4 mb-6" style="background:rgba(6,199,85,0.07);border:1px solid rgba(6,199,85,0.2);">
+                <p class="text-[#A39171] text-xs tracking-wider mb-3">加入官方 LINE・優先掌握下次開課通知</p>
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-11 h-11 rounded-xl flex items-center justify-content-center flex-shrink-0" style="background:#06C755;display:flex;align-items:center;justify-content:center;">
+                        <i class="fa-brands fa-line text-white text-xl"></i>
+                    </div>
+                    <div class="flex-1 text-left">
+                        <p class="text-[#E8DCC4] text-sm font-medium line-name-text">御景家 YUJINGJIA</p>
+                        <p class="text-[#5C5547] text-xs line-id-text">@yujingjia</p>
+                    </div>
+                </div>
+                <a href="https://line.me/R/ti/p/@yujingjia" class="line-add-friend" target="_blank" rel="noopener noreferrer"
+                   style="display:block;width:100%;padding:0.85rem;border-radius:9999px;font-size:0.85rem;font-weight:700;letter-spacing:0.15em;text-align:center;text-decoration:none;color:#fff;background:#06C755;box-shadow:0 4px 20px rgba(6,199,85,0.3);">
+                    <i class="fa-brands fa-line mr-2"></i>加入 LINE 好友
+                </a>
+            </div>
+
+            <!-- 關閉按鈕 -->
+            <button onclick="closeFullClosedModal()"
+                class="w-full py-3 border border-[#2A251B] rounded-xl text-xs text-[#5C5547] hover:text-[#D4B78F] hover:border-[#D4B78F]/30 transition-all duration-300 uppercase tracking-[0.3em] bg-transparent cursor-pointer">
+                關閉
+            </button>
+        </div>
+    </div>
+
 
     <!-- 隱私政策彈窗 -->
     <div id="privacy-modal" class="fixed inset-0 z-[110]" style="display:none;align-items:center;justify-content:center;padding:1.5rem">
@@ -718,83 +689,16 @@
                 <p class="text-[#E8DCC4] font-medium text-sm">御景家（YUJINGJIA ART STUDIO）個人資料保護聲明</p>
                 <div><p class="text-[#D4B78F] text-xs tracking-widest uppercase mb-2">一、收集目的</p><p>本工作室依台灣個人資料保護法，僅於課程報名流程中收集您的個人資料，用於確認報名資格、寄送課程相關通知及聯繫事宜。</p></div>
                 <div><p class="text-[#D4B78F] text-xs tracking-widest uppercase mb-2">二、收集項目</p><p>姓名、聯絡電話、電子郵件信箱。</p></div>
-                <div><p class="text-[#D4B78F] text-xs tracking-widest uppercase mb-2">三、利用方式</p><p>您的個人資料僅供御景家內部使用，用於課程報名確認、行程通知、名額異動通知。不會出售、出租或以任何形式提供予第三方。</p></div>
+                <div><p class="text-[#D4B78F] text-xs tracking-widest uppercase mb-2">三、利用方式</p><p>您的個人資料僅供御景家內部使用，不會出售、出租或以任何形式提供予第三方。</p></div>
                 <div><p class="text-[#D4B78F] text-xs tracking-widest uppercase mb-2">四、保存期限</p><p>資料保存至課程結束後六個月，逾期將予以刪除。</p></div>
-                <div><p class="text-[#D4B78F] text-xs tracking-widest uppercase mb-2">五、您的權利</p><p>您得依個資法第三條規定，向本工作室請求查詢、閱覽、補充、更正或刪除您的個人資料。如需行使上述權利，請透過官方 LINE 群組與我們聯繫。</p></div>
-                <div><p class="text-[#D4B78F] text-xs tracking-widest uppercase mb-2">六、廣告追蹤說明</p><p>本頁面使用 Facebook Pixel 及 TikTok Pixel 進行廣告投放成效追蹤，追蹤資料由各平台依其隱私政策處理，不包含您填寫的報名個資。</p></div>
+                <div><p class="text-[#D4B78F] text-xs tracking-widest uppercase mb-2">五、您的權利</p><p>您得依個資法第三條規定，向本工作室請求查詢、閱覽、補充、更正或刪除您的個人資料。</p></div>
             </div>
             <button onclick="document.getElementById('privacy-modal').style.display='none'"
                 class="mt-8 w-full py-4 btn-gold rounded-xl tracking-[0.3em] text-xs font-bold uppercase">我已了解</button>
         </div>
     </div>
 
-    <!-- 額滿彈窗 -->
-    <div id="full-modal" class="fixed inset-0 z-[100]" style="display:none;align-items:center;justify-content:center;padding:1.5rem">
-        <div class="absolute inset-0 bg-black/90 backdrop-blur-xl"></div>
-        <div class="bg-[#0D0C0B] border border-[#D4B78F]/30 rounded-[2rem] p-10 md:p-14 max-w-lg w-full relative shadow-[0_0_100px_rgba(0,0,0,1)] animate-fadeInUp modal-glow modal-scroll">
-            <button onclick="closeFullModal()" aria-label="關閉"
-                class="absolute top-5 right-6 text-[#5C5547] hover:text-[#D4B78F] transition-colors duration-300 text-xl bg-transparent border-none cursor-pointer">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-            <div class="text-center mb-8">
-                <div class="w-20 h-20 bg-gradient-to-br from-[#D4B78F] to-[#A38A6A] rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-                    <i class="fa-solid fa-heart text-[#12110F] text-2xl"></i>
-                </div>
-                <h3 id="full-modal-title" class="text-2xl md:text-3xl font-serif text-[#D4B78F] mb-3 tracking-[0.2em]">感謝您的熱情 🌸</h3>
-                <p class="text-[#5C5547] text-sm tracking-wider">本場次名額已全數額滿</p>
-            </div>
-            <div id="full-modal-body" class="text-[#A39171] text-sm font-light leading-loose text-left space-y-4 mb-8">
-                <p class="text-[#E8DCC4] border-b border-[#2A251B] pb-4">每一份報名都代表著一份對花藝的熱忱，我們非常感謝您的關注與支持。🙏</p>
-                <p>雖然本場次已額滿，但好消息是——</p>
-                <ul class="space-y-3">
-                    <li class="flex items-start gap-3"><span class="text-[#D4B78F] mt-0.5">✦</span><span>留下您的資料，<strong class="text-[#E8DCC4]">有名額釋出時我們會第一時間通知您遞補</strong></span></li>
-                    <li class="flex items-start gap-3"><span class="text-[#D4B78F] mt-0.5">✦</span><span><strong class="text-[#E8DCC4]">下次開課優先通知您</strong>，讓您不再錯過心儀的場次</span></li>
-                    <li class="flex items-start gap-3"><span class="text-[#D4B78F] mt-0.5">✦</span><span>加入 LINE 群組，隨時掌握最新課程動態與花藝分享</span></li>
-                </ul>
-            </div>
-            <form id="waitlistForm" novalidate class="space-y-5">
-                <div class="space-y-3">
-                    <label class="text-sm tracking-[0.2em] text-[#8A8068] uppercase font-medium">姓名 / Name <span class="text-[#8B0000]">*</span></label>
-                    <input type="text" name="name" id="wl-name" required autocomplete="name" class="w-full px-5 py-4 rounded-xl text-sm" placeholder="請輸入姓名">
-                    <p class="error-msg" id="err-wl-name">請輸入姓名</p>
-                </div>
-                <div class="space-y-3">
-                    <label class="text-sm tracking-[0.2em] text-[#8A8068] uppercase font-medium">聯絡電話 / Phone <span class="text-[#8B0000]">*</span></label>
-                    <input type="tel" name="phone" id="wl-phone" required autocomplete="tel" inputmode="numeric" class="w-full px-5 py-4 rounded-xl text-sm" placeholder="09xxxxxxxx">
-                    <p class="error-msg" id="err-wl-phone">請輸入有效的手機號碼（09 開頭，共 10 碼）</p>
-                </div>
-                <div class="space-y-3">
-                    <label class="text-sm tracking-[0.2em] text-[#8A8068] uppercase font-medium">電子郵件 / Email <span class="text-[#8B0000]">*</span></label>
-                    <input type="email" name="email" id="wl-email" required autocomplete="email" class="w-full px-5 py-4 rounded-xl text-sm" placeholder="接收通知使用">
-                    <p class="error-msg" id="err-wl-email">請輸入有效的 Email 格式</p>
-                </div>
-                <input type="hidden" name="type" value="候補名單">
-                <div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;" tabindex="-1">
-                    <input type="text" name="_hp" id="_hp_wl" autocomplete="off" tabindex="-1" placeholder="leave empty">
-                </div>
-                <button type="submit" id="waitlistBtn" class="w-full btn-gold py-5 rounded-2xl text-sm font-bold tracking-[0.4em] uppercase shadow-2xl mt-2">
-                    🌸 保留候補資格・優先通知我
-                </button>
-                <p class="text-center text-sm text-[#3A3225]/70 tracking-wide">留下資料後系統將自動寄送確認信至您的信箱</p>
-            </form>
-            <div class="mt-6 pt-5 border-t border-[#2A251B]/50 text-center">
-                <p class="text-[#5C5547] text-sm tracking-wide mb-3">或加入官方 LINE 帳號直接掌握最新消息</p>
-                <div class="flex items-center gap-4 p-4 rounded-2xl" style="background:rgba(6,199,85,0.08);border:1px solid rgba(6,199,85,0.2);">
-                    <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#06C755;">
-                        <i class="fa-brands fa-line text-white text-2xl"></i>
-                    </div>
-                    <div class="flex-1 text-left">
-                        <p class="text-[#E8DCC4] text-sm font-medium tracking-wide line-name-text">御景家 YUJINGJIA</p>
-                        <p class="text-[#5C5547] text-xs tracking-wider line-id-text">@yujingjia</p>
-                    </div>
-                    <a href="https://line.me/R/ti/p/@yujingjia" class="line-add-friend" target="_blank" rel="noopener noreferrer"
-                       style="flex-shrink:0;padding:8px 16px;border-radius:12px;font-size:0.75rem;font-weight:700;color:#fff;text-decoration:none;background:#06C755;">加入好友</a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ✅ v8 成功彈窗：直接告知報名成功，無確認機制 -->
+    <!-- 報名成功彈窗 -->
     <div id="success-modal" class="fixed inset-0 z-[100]" style="display:none;align-items:center;justify-content:center;padding:1.5rem">
         <div class="absolute inset-0 bg-black/90 backdrop-blur-xl"></div>
         <div class="bg-[#0D0C0B] border border-[#D4B78F]/30 rounded-[2rem] p-10 md:p-14 max-w-lg w-full relative text-center shadow-[0_0_100px_rgba(0,0,0,1)] animate-fadeInUp modal-glow modal-scroll">
@@ -804,7 +708,7 @@
             <h3 id="modalTitle" class="text-2xl md:text-3xl font-serif text-[#D4B78F] mb-6 tracking-[0.2em]">報名已受理</h3>
             <div id="modalDesc" class="text-[#A39171] text-sm font-light leading-loose mb-8 text-left space-y-4"></div>
             <div class="mb-8 pt-5 border-t border-[#2A251B]/50">
-                <p class="text-[#A39171] text-sm tracking-wider mb-4">加入官方帳號，掌握最新課程動態與花藝分享</p>
+                <p class="text-[#A39171] text-sm tracking-wider mb-4">加入官方帳號，掌握最新課程動態</p>
                 <div class="flex items-center gap-4 p-4 rounded-2xl" style="background:rgba(6,199,85,0.08);border:1px solid rgba(6,199,85,0.2);">
                     <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#06C755;">
                         <i class="fa-brands fa-line text-white text-2xl"></i>
@@ -822,15 +726,21 @@
     </div>
 
     <!-- 底部懸浮 CTA -->
-    <div id="sticky-cta"
-         class="fixed bottom-0 left-0 w-full z-40 transition-transform duration-500 ease-in-out translate-y-full"
+    <div id="sticky-cta" class="fixed bottom-0 left-0 w-full z-40 transition-transform duration-500 ease-in-out translate-y-full"
          style="padding-bottom: env(safe-area-inset-bottom);">
         <div class="px-4 py-3 bg-[#0D0C0B]/90 backdrop-blur-xl border-t border-[#D4B78F]/15">
+            <!-- 正常報名 CTA -->
             <button id="sticky-cta-btn"
                     class="btn-gold w-full py-4 rounded-2xl text-sm font-bold tracking-[0.4em] uppercase shadow-2xl flex items-center justify-center gap-3"
                     onclick="document.getElementById('bookingForm').scrollIntoView({behavior:'smooth', block:'start'})">
                 立即報名
                 <i class="fa-solid fa-chevron-down text-xs animate-bounce" style="animation-duration:1s;"></i>
+            </button>
+            <!-- 額滿 CTA（初始隱藏） -->
+            <button id="sticky-cta-full"
+                    class="w-full py-4 rounded-2xl text-sm font-bold tracking-[0.4em] uppercase btn-full flex items-center justify-center gap-3"
+                    style="display:none;" disabled>
+                <i class="fa-solid fa-lock text-xs"></i> 本場次已額滿
             </button>
         </div>
     </div>
@@ -879,39 +789,32 @@
             document.getElementById('utm_source').value   = p.get('utm_source')   || '';
             document.getElementById('utm_medium').value   = p.get('utm_medium')   || '';
             document.getElementById('utm_campaign').value = p.get('utm_campaign') || '';
-            var cleanUrl = window.location.href.split('?')[0];
-            var ogUrl = document.querySelector('meta[property="og:url"]');
-            if (ogUrl) ogUrl.setAttribute('content', cleanUrl);
-            var canon = document.querySelector('link[rel="canonical"]');
-            if (canon && !canon.getAttribute('href')) canon.setAttribute('href', cleanUrl);
         }
 
         function revealUI() {
             ['sk-name','sk-phone','sk-email','sk-course','sk-checkbox','sk-btn',
              'sk-info-1','sk-info-2','sk-info-3','sk-course-card'].forEach(function(id) {
-                var el = document.getElementById(id);
-                if (el) el.style.display = 'none';
+                var el = document.getElementById(id); if (el) el.style.display = 'none';
             });
             ['reg-name','reg-phone','reg-email','course-display',
              'checkbox-wrap','privacy-wrap','info-card-1','info-card-2','info-card-3',
              'seats-status-wrap','course-card','course-proof-strip'].forEach(function(id) {
-                var el = document.getElementById(id);
-                if (el) el.style.display = '';
+                var el = document.getElementById(id); if (el) el.style.display = '';
             });
-            var btn = document.getElementById('submitBtn');
-            if (btn) { btn.style.display = ''; btn.disabled = false; }
         }
 
         var Validator = {
             isEmail:  function(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()); },
             isPhone:  function(v) { return /^09\d{8}$/.test(v.trim().replace(/[-\s]/g, '')); },
             notEmpty: function(v) { return v.trim().length > 0; },
-            showError: function(f,e){ document.getElementById(f)&&document.getElementById(f).classList.add('field-error'); document.getElementById(e)&&document.getElementById(e).classList.add('visible'); },
-            clearError: function(f,e){ document.getElementById(f)&&document.getElementById(f).classList.remove('field-error'); document.getElementById(e)&&document.getElementById(e).classList.remove('visible'); },
+            showError: function(f,e){ var fe=document.getElementById(f), ee=document.getElementById(e); if(fe)fe.classList.add('field-error'); if(ee)ee.classList.add('visible'); },
+            clearError: function(f,e){ var fe=document.getElementById(f), ee=document.getElementById(e); if(fe)fe.classList.remove('field-error'); if(ee)ee.classList.remove('visible'); },
             validateRegForm: function() {
-                var ok = true;
-                var name=document.getElementById('reg-name').value, phone=document.getElementById('reg-phone').value,
-                    email=document.getElementById('reg-email').value, agree=document.getElementById('reg-agreement').checked,
+                var ok=true;
+                var name=document.getElementById('reg-name').value,
+                    phone=document.getElementById('reg-phone').value,
+                    email=document.getElementById('reg-email').value,
+                    agree=document.getElementById('reg-agreement').checked,
                     privacy=document.getElementById('reg-privacy').checked;
                 if (!this.notEmpty(name))  { this.showError('reg-name','err-reg-name');           ok=false; } else this.clearError('reg-name','err-reg-name');
                 if (!this.isPhone(phone))  { this.showError('reg-phone','err-reg-phone');         ok=false; } else this.clearError('reg-phone','err-reg-phone');
@@ -919,43 +822,32 @@
                 if (!agree)                { this.showError('reg-agreement','err-reg-agreement'); ok=false; } else this.clearError('reg-agreement','err-reg-agreement');
                 if (!privacy)              { this.showError('reg-privacy','err-reg-privacy');     ok=false; } else this.clearError('reg-privacy','err-reg-privacy');
                 return ok;
-            },
-            validateWaitlistForm: function() {
-                var ok = true;
-                var name=document.getElementById('wl-name').value, phone=document.getElementById('wl-phone').value,
-                    email=document.getElementById('wl-email').value;
-                if (!this.notEmpty(name))  { this.showError('wl-name','err-wl-name');   ok=false; } else this.clearError('wl-name','err-wl-name');
-                if (!this.isPhone(phone))  { this.showError('wl-phone','err-wl-phone'); ok=false; } else this.clearError('wl-phone','err-wl-phone');
-                if (!this.isEmail(email))  { this.showError('wl-email','err-wl-email'); ok=false; } else this.clearError('wl-email','err-wl-email');
-                return ok;
             }
         };
 
         var UI = {
-            showModal: function(id){ document.getElementById(id).style.display='flex'; },
-            hideModal: function(id){ document.getElementById(id).style.display='none'; },
+            showModal: function(id){ var el=document.getElementById(id); if(el){ el.style.display='flex'; } },
+            hideModal: function(id){ var el=document.getElementById(id); if(el){ el.style.display='none'; } },
             setBtnLoading: function(btn,loading,txt){ btn.disabled=loading; btn.innerHTML=loading?'<span class="btn-spinner"></span>處理中...':txt; },
-            // v8: 成功彈窗簡化，直接告知報名成功
             showResult: function(o){
-                document.getElementById('modalTitle').innerText=o.title;
-                document.getElementById('modalDesc').innerHTML=o.desc;
-                document.getElementById('modalIcon').className=o.icon;
+                document.getElementById('modalTitle').innerText = o.title;
+                document.getElementById('modalDesc').innerHTML  = o.desc;
+                document.getElementById('modalIcon').className  = o.icon;
                 this.showModal('success-modal');
             },
             showSyncIndicator: function(msg){
-                msg = msg || '🔄 資料已更新';
                 var el=document.getElementById('config-sync-indicator');
                 if(!el) return;
-                el.textContent=msg; el.classList.add('show');
+                el.textContent=msg||'🔄 資料已更新'; el.classList.add('show');
                 clearTimeout(el._timer);
                 el._timer=setTimeout(function(){el.classList.remove('show');},3000);
             },
             showToast: function(msg, type){
-                type = type || 'error';
+                type=type||'error';
                 var toast=document.getElementById('ui-toast');
                 if(!toast){
                     toast=document.createElement('div'); toast.id='ui-toast';
-                    toast.style.cssText='position:fixed;bottom:calc(5rem + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(20px);z-index:9999;max-width:90vw;width:auto;padding:0.85rem 1.4rem;border-radius:1rem;font-size:0.78rem;line-height:1.6;letter-spacing:0.04em;text-align:center;pointer-events:none;opacity:0;transition:opacity 0.35s ease,transform 0.35s ease';
+                    toast.style.cssText='position:fixed;bottom:calc(5rem + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(20px);z-index:9999;max-width:90vw;padding:0.85rem 1.4rem;border-radius:1rem;font-size:0.78rem;line-height:1.6;letter-spacing:0.04em;text-align:center;pointer-events:none;opacity:0;transition:opacity 0.35s ease,transform 0.35s ease';
                     document.body.appendChild(toast);
                 }
                 var isErr=(type==='error');
@@ -970,321 +862,235 @@
             }
         };
 
+        // ════════════════════════════════
+        // 額滿/關閉 UI 統一處理
+        // ════════════════════════════════
+        function lockFormAsFull(showModal) {
+            // 1. 顯示額滿彈窗
+            if (showModal) {
+                document.getElementById('full-closed-modal').classList.add('show');
+            }
+            // 2. 報名按鈕換成鎖定版
+            var submitBtn = document.getElementById('submitBtn');
+            var fullBtn   = document.getElementById('fullBtn');
+            if (submitBtn) submitBtn.style.display = 'none';
+            if (fullBtn)   fullBtn.style.display   = '';
+            // 3. Sticky CTA 換成鎖定版
+            var stickyCta     = document.getElementById('sticky-cta-btn');
+            var stickyCtaFull = document.getElementById('sticky-cta-full');
+            if (stickyCta)     stickyCta.style.display     = 'none';
+            if (stickyCtaFull) stickyCtaFull.style.display = '';
+            // 4. 隱藏促銷文字
+            var urgencyBar = document.getElementById('urgency-bar');
+            if (urgencyBar) urgencyBar.classList.remove('show');
+        }
+
+        window.closeFullClosedModal = function() {
+            document.getElementById('full-closed-modal').classList.remove('show');
+        };
+
         function loadCourseImage(rawUrl) {
-            var wrap     = document.getElementById('course-image-wrap');
-            var img      = document.getElementById('course-image');
-            var fallback = document.getElementById('course-image-fallback');
-            if (!wrap || !img || !fallback) return;
-            var url = convertDriveUrl(rawUrl);
-            if (!url) {
-                wrap.classList.remove('img-loading');
-                img.style.display = 'none';
-                fallback.style.display = 'flex';
-                return;
-            }
-            wrap.classList.add('img-loading');
-            img.style.display  = 'none';
-            img.style.opacity  = '0';
-            fallback.style.display = 'none';
-            img.onload  = null;
-            img.onerror = null;
-            function onSuccess() {
-                wrap.classList.remove('img-loading');
-                img.style.display = 'block';
-                requestAnimationFrame(function() { requestAnimationFrame(function() { img.style.opacity = '1'; }); });
-            }
-            function onFail(triedUrl) {
-                if (triedUrl.indexOf('/thumbnail') >= 0) {
-                    var m = triedUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-                    if (m && m[1]) {
-                        var ucUrl = 'https://drive.google.com/uc?export=view&id=' + m[1];
-                        img.onload  = onSuccess;
-                        img.onerror = function() { showImgError(ucUrl); };
-                        img.src     = ucUrl;
-                        return;
-                    }
-                }
-                showImgError(triedUrl);
-            }
-            function showImgError(failedUrl) {
-                wrap.classList.remove('img-loading');
-                img.style.display      = 'none';
-                fallback.style.display = 'flex';
-                fallback.innerHTML = '<span style="font-size:1.5rem">🔒</span>'
-                    + '<span style="color:#5C5547;font-size:0.75rem;">圖片載入失敗</span>'
-                    + '<span style="display:inline-flex;align-items:center;gap:0.35rem;font-size:0.7rem;letter-spacing:0.08em;color:#3A3225;background:rgba(22,20,18,0.8);border:1px solid rgba(42,37,27,0.8);border-radius:9999px;padding:0.2rem 0.6rem;margin-top:0.4rem;">'
-                    + '請確認 Drive 圖片已設為「公開」</span>';
-            }
-            img.onload  = onSuccess;
-            img.onerror = function() { onFail(url); };
-            img.src     = url;
+            var wrap=document.getElementById('course-image-wrap'),img=document.getElementById('course-image'),fallback=document.getElementById('course-image-fallback');
+            if (!wrap||!img||!fallback) return;
+            var url=convertDriveUrl(rawUrl);
+            if (!url) { wrap.classList.remove('img-loading'); img.style.display='none'; fallback.style.display='flex'; return; }
+            wrap.classList.add('img-loading'); img.style.display='none'; img.style.opacity='0'; fallback.style.display='none';
+            img.onload=function(){ wrap.classList.remove('img-loading'); img.style.display='block'; requestAnimationFrame(function(){requestAnimationFrame(function(){img.style.opacity='1';});}); };
+            img.onerror=function(){ wrap.classList.remove('img-loading'); img.style.display='none'; fallback.style.display='flex'; };
+            img.src=url;
         }
 
         function loadStudentImg(id, rawUrl) {
-            var el = document.getElementById(id);
-            if (!el || !rawUrl) return;
-            var url = convertDriveUrl(rawUrl);
-            if (!url) return;
-            var prevSrc = el.src;
-            el.onerror = function() { el.src = prevSrc; el.onerror = null; };
-            el.src = url;
+            var el=document.getElementById(id); if(!el||!rawUrl) return;
+            var url=convertDriveUrl(rawUrl); if(!url) return;
+            var prev=el.src; el.onerror=function(){el.src=prev;el.onerror=null;}; el.src=url;
         }
 
         var Api = {
             _jsonp: function(bust) {
-                return new Promise(function(resolve, reject) {
-                    var cbName = '__gas_cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-                    var script = document.createElement('script');
-                    var timer  = setTimeout(function() { cleanup(); reject(new Error('JSONP timeout')); }, 12000);
-                    function cleanup() {
-                        clearTimeout(timer);
-                        delete window[cbName];
-                        if (script.parentNode) script.parentNode.removeChild(script);
-                    }
-                    window[cbName] = function(data) {
-                        cleanup();
-                        if (data && data.result === 'error') { reject(new Error('GAS: ' + data.message)); return; }
-                        resolve(data);
-                    };
-                    script.onerror = function() { cleanup(); reject(new Error('JSONP script load failed')); };
-                    var bustStr = bust ? '&bust=' + bust : '';
-                    script.src = CONFIG.scriptURL + '?action=' + CONFIG.actions.CHECK_FULL + '&callback=' + cbName + bustStr + '&_=' + Date.now();
+                return new Promise(function(resolve,reject){
+                    var cbName='__gas_cb_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+                    var script=document.createElement('script');
+                    var timer=setTimeout(function(){cleanup();reject(new Error('JSONP timeout'));},12000);
+                    function cleanup(){clearTimeout(timer);delete window[cbName];if(script.parentNode)script.parentNode.removeChild(script);}
+                    window[cbName]=function(data){cleanup();if(data&&data.result==='error'){reject(new Error('GAS: '+data.message));return;}resolve(data);};
+                    script.onerror=function(){cleanup();reject(new Error('JSONP script load failed'));};
+                    var bustStr=bust?'&bust='+bust:'';
+                    script.src=CONFIG.scriptURL+'?action='+CONFIG.actions.CHECK_FULL+'&callback='+cbName+bustStr+'&_='+Date.now();
                     document.head.appendChild(script);
                 });
             },
-            _fetchFallback: function(bust) {
-                var url = CONFIG.scriptURL + '?action=' + CONFIG.actions.CHECK_FULL + (bust ? '&bust=' + bust : '') + '&_=' + Date.now();
-                var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-                var timeout = setTimeout(function() { if (ctrl) ctrl.abort(); }, 8000);
-                var fetchOpts = { redirect:'follow', cache:'no-cache' };
-                if (ctrl) fetchOpts.signal = ctrl.signal;
-                return fetch(url, fetchOpts).then(function(res) {
-                    clearTimeout(timeout);
-                    if (!res.ok) throw new Error('HTTP ' + res.status);
-                    return res.json();
-                }).then(function(data) {
-                    if (data && data.result === 'error') throw new Error('GAS: ' + data.message);
-                    return data;
-                }).catch(function(err) { clearTimeout(timeout); throw err; });
+            _fetchFallback: function(bust){
+                var url=CONFIG.scriptURL+'?action='+CONFIG.actions.CHECK_FULL+(bust?'&bust='+bust:'')+'&_='+Date.now();
+                return fetch(url,{redirect:'follow',cache:'no-cache'}).then(function(res){if(!res.ok)throw new Error('HTTP '+res.status);return res.json();});
             },
-            checkFull: function(forceRefresh) {
-                if (!forceRefresh) {
-                    var cached = getLocalCache();
-                    if (cached) return Promise.resolve(cached);
-                }
-                var bust = forceRefresh ? Date.now() : null;
-                var self = this;
-                if (CONFIG.PREFER_JSONP) {
-                    return self._jsonp(bust).catch(function(jsonpErr) {
-                        console.warn('[Api] JSONP failed, trying fetch:', jsonpErr.message);
-                        return self._fetchFallback(bust);
-                    }).then(function(data) { setLocalCache(data); return data; });
-                } else {
-                    return self._fetchFallback(bust).catch(function(fetchErr) {
-                        console.warn('[Api] fetch failed, trying JSONP:', fetchErr.message);
-                        return self._jsonp(bust);
-                    }).then(function(data) { setLocalCache(data); return data; });
-                }
+            checkFull: function(forceRefresh){
+                if(!forceRefresh){var cached=getLocalCache();if(cached)return Promise.resolve(cached);}
+                var bust=forceRefresh?Date.now():null,self=this;
+                var p=CONFIG.PREFER_JSONP?self._jsonp(bust).catch(function(){return self._fetchFallback(bust);}):self._fetchFallback(bust).catch(function(){return self._jsonp(bust);});
+                return p.then(function(data){setLocalCache(data);return data;});
             },
-            post: function(fd) {
-                var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-                var timeout = setTimeout(function() { if (ctrl) ctrl.abort(); }, 15000);
-                var fetchOpts = { method:'POST', body:fd, redirect:'follow' };
-                if (ctrl) fetchOpts.signal = ctrl.signal;
-                return fetch(CONFIG.scriptURL, fetchOpts).then(function(res) {
-                    clearTimeout(timeout);
-                    if (!res.ok) throw new Error('HTTP ' + res.status);
-                    return res.json();
-                }).catch(function(err) { clearTimeout(timeout); throw err; });
+            post: function(fd){
+                return fetch(CONFIG.scriptURL,{method:'POST',body:fd,redirect:'follow'}).then(function(res){if(!res.ok)throw new Error('HTTP '+res.status);return res.json();});
             }
         };
 
-        function fireLeadEvent(status) {
-            try {
-                if(typeof fbq==='function') fbq('track','Lead',{content_name:status});
-                if(typeof ttq!=='undefined'&&typeof ttq.track==='function') ttq.track('SubmitForm',{content_name:status});
-            } catch(e) {}
+        function fireLeadEvent(status){
+            try{ if(typeof fbq==='function')fbq('track','Lead',{content_name:status}); }catch(e){}
         }
 
-        var cachedMaxSeats = 10;
-        function updateSeatsUI(remaining, maxSeats) {
-            cachedMaxSeats = maxSeats || cachedMaxSeats;
-            var used = cachedMaxSeats - remaining;
-            var pct  = Math.min(100, Math.round((used/cachedMaxSeats)*100));
-            var bar  = document.getElementById('seats-bar-fill');
-            if (bar) bar.style.width = pct + '%';
-            var almostFull = document.getElementById('seats-almost-full');
-            if (almostFull) {
-                remaining > 0 && remaining <= CONFIG.URGENCY_THRESHOLD
-                    ? almostFull.classList.remove('hidden')
-                    : almostFull.classList.add('hidden');
-            }
-            var urgencyBar = document.getElementById('urgency-bar');
-            if (urgencyBar) {
-                if (remaining <= 0) urgencyBar.classList.remove('show');
-                else if (remaining <= CONFIG.URGENCY_THRESHOLD) urgencyBar.classList.add('show');
+        var cachedMaxSeats=10;
+        function updateSeatsUI(remaining,maxSeats){
+            cachedMaxSeats=maxSeats||cachedMaxSeats;
+            var used=cachedMaxSeats-remaining, pct=Math.min(100,Math.round((used/cachedMaxSeats)*100));
+            var bar=document.getElementById('seats-bar-fill'); if(bar) bar.style.width=pct+'%';
+            var almostFull=document.getElementById('seats-almost-full');
+            if(almostFull){ remaining>0&&remaining<=CONFIG.URGENCY_THRESHOLD?almostFull.classList.remove('hidden'):almostFull.classList.add('hidden'); }
+            var urgencyBar=document.getElementById('urgency-bar');
+            if(urgencyBar){
+                // 若已鎖定額滿，不顯示 urgency bar
+                var fullBtn=document.getElementById('fullBtn');
+                if(fullBtn&&fullBtn.style.display!=='none') return;
+                if(remaining<=0) urgencyBar.classList.remove('show');
+                else if(remaining<=CONFIG.URGENCY_THRESHOLD) urgencyBar.classList.add('show');
                 else urgencyBar.classList.remove('show');
             }
         }
 
-        var _prefetchUsed = false;
-        function getPrefetchData() {
-            if (!_prefetchUsed && window.__gasPrefetchData) {
-                _prefetchUsed = true;
-                return Promise.resolve(window.__gasPrefetchData);
-            }
+        var _prefetchUsed=false;
+        function getPrefetchData(){
+            if(!_prefetchUsed&&window.__gasPrefetchData){_prefetchUsed=true;return Promise.resolve(window.__gasPrefetchData);}
             return null;
         }
 
-        var _lastAppliedVersion = 0;
+        var _lastAppliedVersion=0, _isFormLocked=false;
+
         function applyData(data, isPolling) {
-            if (!data || typeof data !== 'object') return;
-            var remaining   = data.remaining != null ? data.remaining : 0;
-            var maxSeats    = Number(data.maxSeats || cachedMaxSeats);
-            var dataVersion = data._v || 0;
-            var isNewData   = dataVersion > _lastAppliedVersion;
-            if (isNewData && isPolling && _lastAppliedVersion > 0) {
-                applyCourseInfo(data);
-                UI.showSyncIndicator('🔄 課程資訊已更新');
-            }
-            if (dataVersion > _lastAppliedVersion) _lastAppliedVersion = dataVersion;
-            updateSeatsUI(remaining, maxSeats);
-            if (data.isFull && maxSeats >= CONFIG.FUSE_THRESHOLD && remaining === 0) {
-                document.getElementById('closed-overlay').classList.add('show');
-                var btn = document.getElementById('submitBtn');
-                if (btn) btn.disabled = true;
+            if(!data||typeof data!=='object') return;
+            var remaining=data.remaining!=null?data.remaining:0;
+            var maxSeats=Number(data.maxSeats||cachedMaxSeats);
+            var dataVersion=data._v||0;
+            var isNewData=dataVersion>_lastAppliedVersion;
+
+            if(isNewData&&isPolling&&_lastAppliedVersion>0){ applyCourseInfo(data); UI.showSyncIndicator('🔄 課程資訊已更新'); }
+            if(dataVersion>_lastAppliedVersion) _lastAppliedVersion=dataVersion;
+
+            updateSeatsUI(remaining,maxSeats);
+
+            // ── 額滿 / 關閉 判斷 ──
+            // isFull = true 表示正取名額已滿（可能還有備取）
+            // isClosed = true 表示 FORM_OPEN = FALSE（完全關閉）
+            var isFullyClosed = data.isClosed || (data.isFull && remaining <= 0);
+
+            if (isFullyClosed && !_isFormLocked) {
+                _isFormLocked = true;
+                // 第一次偵測到額滿：顯示彈窗 + 鎖定按鈕
+                lockFormAsFull(!isPolling); // 初始載入才彈窗，polling 不重複彈
                 return;
             }
+
+            if (isFullyClosed && _isFormLocked) {
+                // 已鎖定，不重複彈窗
+                lockFormAsFull(false);
+                return;
+            }
+
+            // 若 isFull 但還有 fuseSeats 空間（備取仍開放）
             if (data.isFull) {
-                if (!isPolling) {
-                    UI.showModal('full-modal');
-                } else {
-                    var btn2 = document.getElementById('submitBtn');
-                    if (btn2) { btn2.textContent='🌸 登記候補・優先通知'; btn2.onclick=function(e){e.preventDefault();UI.showModal('full-modal');}; }
-                    if (document.getElementById('full-modal').style.display !== 'flex') {
-                        document.getElementById('full-modal-title').textContent = '名額已在您填寫時搶完了 🌸';
-                        UI.showModal('full-modal');
-                    }
-                }
+                var submitBtn=document.getElementById('submitBtn');
+                if(submitBtn){ submitBtn.textContent='🌸 登記候補・優先通知'; submitBtn.disabled=false; submitBtn.onclick=null; }
                 return;
             }
-            var btn3 = document.getElementById('submitBtn');
-            if (btn3) { btn3.textContent='確認提交報名'; btn3.onclick=null; }
+
+            // 正常開放
+            var submitBtn=document.getElementById('submitBtn');
+            if(submitBtn){ submitBtn.textContent='確認提交報名'; submitBtn.disabled=false; submitBtn.onclick=null; }
         }
 
-        function applyCourseInfo(data) {
-            function setEl(id, val) { var el=document.getElementById(id); if(el && val!=null) el.textContent=val; }
-            var courseText = (data.courseName||'') + '｜' + (data.courseDate||'') + '｜' + (data.coursePrice||'');
-            var display=document.getElementById('course-display'), hidden=document.getElementById('hidden-course');
-            if (display) display.textContent = courseText;
-            if (hidden)  hidden.value = courseText;
-            var heroTitle=document.getElementById('hero-title'), heroTagline=document.getElementById('hero-tagline');
-            if (heroTitle   && data.courseName)   heroTitle.textContent   = data.courseName;
-            if (heroTagline && data.heroTagline)   heroTagline.textContent = data.heroTagline;
-            if (data.heroBgImage) {
-                var heroBg=document.getElementById('hero-bg');
-                if (heroBg) heroBg.style.backgroundImage = "url('" + convertDriveUrl(data.heroBgImage) + "')";
-            }
-            setEl('course-card-title',          data.courseName);
-            setEl('course-card-date',           data.courseDate);
-            setEl('course-card-price',          data.coursePrice);
-            setEl('course-card-sub',            data.courseSubtitle || '小班制精緻教學・材料全含・當天完成作品');
-            setEl('course-card-badge',          data.courseBadge   || '零基礎手作課程');
-            setEl('course-card-original-price', data.courseOriginalPrice || '');
-            if (data.courseImage) {
-                loadCourseImage(data.courseImage);
-            } else {
-                var wrap=document.getElementById('course-image-wrap'),
-                    img=document.getElementById('course-image'),
-                    fallback=document.getElementById('course-image-fallback');
-                if (wrap) wrap.classList.remove('img-loading');
-                if (img) img.style.display='none';
-                if (fallback) fallback.style.display='flex';
-            }
-            setEl('proof-headline', data.proofHeadline);
-            setEl('proof-body',     data.proofBody);
-            setEl('stat1-num',      data.proofStat1Num);
-            setEl('stat1-label',    data.proofStat1Label);
-            setEl('stat2-num',      data.proofStat2Num);
-            setEl('stat2-label',    data.proofStat2Label);
-            setEl('stat3-num',      data.proofStat3Num);
-            setEl('stat3-label',    data.proofStat3Label);
-            loadStudentImg('student-img-1', data.studentImg1);
-            loadStudentImg('student-img-2', data.studentImg2);
-            setEl('student-caption-1', data.studentImg1Caption);
-            setEl('student-caption-2', data.studentImg2Caption);
-            if (data.lineId && /^@[\w.-]+$/.test(data.lineId)) {
-                document.querySelectorAll('.line-add-friend').forEach(function(a) { a.href='https://line.me/R/ti/p/'+data.lineId; });
-                document.querySelectorAll('.line-id-text').forEach(function(el) { el.textContent=data.lineId; });
-                document.querySelectorAll('.line-name-text').forEach(function(el) { el.textContent=data.lineName||'御景家 YUJINGJIA'; });
+        function applyCourseInfo(data){
+            function setEl(id,val){var el=document.getElementById(id);if(el&&val!=null)el.textContent=val;}
+            var courseText=(data.courseName||'')+'｜'+(data.courseDate||'')+'｜'+(data.coursePrice||'');
+            var display=document.getElementById('course-display'),hidden=document.getElementById('hidden-course');
+            if(display) display.textContent=courseText;
+            if(hidden)  hidden.value=courseText;
+            var heroTitle=document.getElementById('hero-title'),heroTagline=document.getElementById('hero-tagline');
+            if(heroTitle&&data.courseName) heroTitle.textContent=data.courseName;
+            if(heroTagline&&data.heroTagline) heroTagline.textContent=data.heroTagline;
+            if(data.heroBgImage){var heroBg=document.getElementById('hero-bg');if(heroBg)heroBg.style.backgroundImage="url('"+convertDriveUrl(data.heroBgImage)+"')";}
+            setEl('course-card-title',data.courseName);
+            setEl('course-card-date',data.courseDate);
+            setEl('course-card-price',data.coursePrice);
+            setEl('course-card-sub',data.courseSubtitle||'小班制精緻教學・材料全含・當天完成作品');
+            setEl('course-card-badge',data.courseBadge||'零基礎手作課程');
+            setEl('course-card-original-price',data.courseOriginalPrice||'');
+            if(data.courseImage){ loadCourseImage(data.courseImage); }
+            else{ var wrap=document.getElementById('course-image-wrap'),img=document.getElementById('course-image'),fb=document.getElementById('course-image-fallback'); if(wrap)wrap.classList.remove('img-loading'); if(img)img.style.display='none'; if(fb)fb.style.display='flex'; }
+            setEl('proof-headline',data.proofHeadline);
+            setEl('proof-body',data.proofBody);
+            setEl('stat1-num',data.proofStat1Num); setEl('stat1-label',data.proofStat1Label);
+            setEl('stat2-num',data.proofStat2Num); setEl('stat2-label',data.proofStat2Label);
+            setEl('stat3-num',data.proofStat3Num); setEl('stat3-label',data.proofStat3Label);
+            loadStudentImg('student-img-1',data.studentImg1); loadStudentImg('student-img-2',data.studentImg2);
+            setEl('student-caption-1',data.studentImg1Caption); setEl('student-caption-2',data.studentImg2Caption);
+            if(data.lineId&&/^@[\w.-]+$/.test(data.lineId)){
+                document.querySelectorAll('.line-add-friend').forEach(function(a){a.href='https://line.me/R/ti/p/'+data.lineId;});
+                document.querySelectorAll('.line-id-text').forEach(function(el){el.textContent=data.lineId;});
+                document.querySelectorAll('.line-name-text').forEach(function(el){el.textContent=data.lineName||'御景家 YUJINGJIA';});
             }
             var sw=document.getElementById('section-student-works');
-            if (sw) {
-                data.showStudentWorks===true ? sw.classList.remove('section-hidden') : sw.classList.add('section-hidden');
-            }
+            if(sw){ data.showStudentWorks===true?sw.classList.remove('section-hidden'):sw.classList.add('section-hidden'); }
         }
 
-        var isFirstLoad = true;
-        function pollStatus() {
+        var isFirstLoad=true;
+        function pollStatus(){
             invalidateLocalCache();
-            Api.checkFull(false).then(function(data) {
-                if (!isFirstLoad) applyData(data, true);
-            }).catch(function(e) { console.warn('[poll]', e.message); });
+            Api.checkFull(false).then(function(data){if(!isFirstLoad)applyData(data,true);}).catch(function(e){console.warn('[poll]',e.message);});
         }
-        function startPolling() { setInterval(pollStatus, CONFIG.POLL_INTERVAL); }
+        function startPolling(){ setInterval(pollStatus,CONFIG.POLL_INTERVAL); }
 
-        ['reg-name','reg-phone','reg-email'].forEach(function(id) {
-            var el = document.getElementById(id);
-            if (el) el.addEventListener('focus', function() {
-                if (!isFirstLoad) { invalidateLocalCache(); pollStatus(); }
-            }, {passive:true});
-        });
-
-        window.addEventListener('DOMContentLoaded', function() {
+        window.addEventListener('DOMContentLoaded', function(){
             parseUTM();
-            var _scriptUrlOk = CONFIG.scriptURL && CONFIG.scriptURL.indexOf('YOUR_') < 0 && CONFIG.scriptURL.length > 50;
-            if (!_scriptUrlOk) {
-                revealUI(); isFirstLoad = false;
-                var display=document.getElementById('course-display');
-                if (display) { display.textContent='⚠️ 請在 HTML 的 CONFIG.scriptURL 填入您的 GAS 部署網址'; display.style.color='#c0392b'; }
+            var _scriptUrlOk=CONFIG.scriptURL&&CONFIG.scriptURL.indexOf('YOUR_')<0&&CONFIG.scriptURL.length>50;
+            if(!_scriptUrlOk){
+                revealUI(); isFirstLoad=false;
+                var submitBtn=document.getElementById('submitBtn'); if(submitBtn){submitBtn.style.display='';submitBtn.disabled=false;}
+                var d=document.getElementById('course-display');
+                if(d){d.textContent='⚠️ 請填入 GAS 部署網址';d.style.color='#c0392b';}
                 return;
             }
-            function initWithRetry(maxRetry, delay) {
-                maxRetry = maxRetry || 2; delay = delay || 2500;
-                var attempt = 0;
-                function tryOnce() {
+            function initWithRetry(maxRetry,delay){
+                maxRetry=maxRetry||2; delay=delay||2500; var attempt=0;
+                function tryOnce(){
                     attempt++;
-                    var p = (attempt === 1) ? (getPrefetchData() || Api.checkFull(false)) : Api.checkFull(true);
-                    p.then(function(data) {
+                    var p=(attempt===1)?(getPrefetchData()||Api.checkFull(false)):Api.checkFull(true);
+                    p.then(function(data){
                         applyCourseInfo(data);
                         revealUI();
-                        isFirstLoad = false;
-                        applyData(data, false);
+                        // 初始載入完成後才顯示正確按鈕
+                        var submitBtn=document.getElementById('submitBtn');
+                        if(submitBtn) submitBtn.style.display='';
+                        isFirstLoad=false;
+                        applyData(data,false);
                         startPolling();
-                    }).catch(function(err) {
-                        console.warn('[init] attempt ' + attempt + '/' + maxRetry + ':', err.message);
-                        if (attempt < maxRetry) {
+                    }).catch(function(err){
+                        console.warn('[init] attempt '+attempt+'/'+maxRetry+':', err.message);
+                        if(attempt<maxRetry){
                             revealUI();
+                            var submitBtn=document.getElementById('submitBtn');
+                            if(submitBtn){submitBtn.style.display='';submitBtn.disabled=false;}
                             var d=document.getElementById('course-display');
-                            if (d) { d.textContent='課程資訊載入中，請稍候…'; d.style.color='#A39171'; }
-                            setTimeout(tryOnce, delay);
+                            if(d){d.textContent='課程資訊載入中，請稍候…';d.style.color='#A39171';}
+                            setTimeout(tryOnce,delay);
                         } else {
-                            revealUI(); isFirstLoad = false;
+                            revealUI(); isFirstLoad=false;
+                            var submitBtn=document.getElementById('submitBtn');
+                            if(submitBtn){submitBtn.style.display='';submitBtn.disabled=false;}
                             var d=document.getElementById('course-display');
-                            if (d) { d.textContent='課程資訊載入中，請稍候…'; d.style.color='#A39171'; }
-                            setTimeout(function() {
+                            if(d){d.textContent='課程資訊載入中，請稍候…';d.style.color='#A39171';}
+                            setTimeout(function(){
                                 invalidateLocalCache();
-                                Api.checkFull(true).then(function(data) {
-                                    applyCourseInfo(data);
-                                    applyData(data, false);
-                                    startPolling();
-                                    var d2=document.getElementById('course-display');
-                                    if (d2) d2.style.color = '';
-                                }).catch(function() {
-                                    var d2=document.getElementById('course-display');
-                                    if (d2) { d2.textContent='課程資訊暫時無法載入，請重新整理頁面'; d2.style.color='#c0392b'; }
-                                });
-                            }, 8000);
+                                Api.checkFull(true).then(function(data){applyCourseInfo(data);applyData(data,false);startPolling();}).catch(function(){});
+                            },8000);
                         }
                     });
                 }
@@ -1293,113 +1099,45 @@
             initWithRetry();
         });
 
-        window.closeFullModal = function() { UI.hideModal('full-modal'); };
-
-        // ── 候補送出 ──
-        var waitlistForm=document.getElementById('waitlistForm'), waitlistBtn=document.getElementById('waitlistBtn');
-        var waitlistSubmitting = false;
-        waitlistForm.addEventListener('submit', function(e) {
+        // ── 報名表單送出 ──
+        var bookingForm=document.getElementById('bookingForm'),submitBtn=document.getElementById('submitBtn');
+        var regSubmitting=false;
+        bookingForm.addEventListener('submit', function(e){
             e.preventDefault();
-            if (waitlistSubmitting) return;
-            if (!Validator.validateWaitlistForm()) return;
-            waitlistSubmitting = true;
-            UI.setBtnLoading(waitlistBtn, true, '🌸 保留候補資格・優先通知我');
-            var fd = new FormData(waitlistForm);
-            fd.append('action', CONFIG.actions.WAITLIST);
-            Api.post(fd).then(function(res) {
-                if (res.result === 'duplicate') {
-                    UI.showToast('您的電話或 Email 已登記過候補，如需修改請加入官方 LINE 聯繫。', 'info');
-                    UI.setBtnLoading(waitlistBtn, false, '🌸 保留候補資格・優先通知我');
-                    return;
-                }
-                fireLeadEvent('候補');
-                UI.hideModal('full-modal');
-                // v8: 成功訊息簡化，不含確認機制
-                UI.showResult({
-                    title:'已列入候補名單 🌸',
-                    desc:'<p class="text-center">您的候補資格已登記成功！<br>確認信已寄至您的信箱，請查收。<br><br>一旦有名額釋出，我們將第一時間通知您。<br>感謝您的耐心等候，期待與您相聚 🌺</p>',
-                    icon:'fa-solid fa-envelope-open-text text-[#12110F] text-2xl'
-                });
-                waitlistForm.reset();
-            }).catch(function(err) {
-                console.error('[waitlist]', err.message);
-                UI.showToast('目前系統繁忙，請稍後再試或加入官方 LINE 聯繫', 'error');
-                UI.setBtnLoading(waitlistBtn, false, '🌸 保留候補資格・優先通知我');
-            }).finally(function() { waitlistSubmitting = false; });
-        });
-
-        // ── 正式報名送出 ──
-        // v8 核心修正：
-        //   送出後直接告知「報名成功」
-        //   不顯示任何確認機制、加LINE確認席次等訊息
-        var bookingForm=document.getElementById('bookingForm'), submitBtn=document.getElementById('submitBtn');
-        var regSubmitting = false;
-
-        bookingForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            if (regSubmitting) return;
-            if (!Validator.validateRegForm()) return;
-
-            regSubmitting = true;
-            UI.setBtnLoading(submitBtn, true, '確認提交報名');
-            var fd = new FormData(bookingForm);
-            fd.append('action', CONFIG.actions.REGISTER);
-            Api.post(fd).then(function(data) {
-                if (data.result === 'duplicate') {
-                    UI.showToast(data.message || '此電話或 Email 已報名本場次，如需修改請加入官方 LINE 聯繫。', 'info');
-                    UI.setBtnLoading(submitBtn, false, '確認提交報名');
-                    return;
-                }
-                if (data.result === 'closed') {
-                    document.getElementById('closed-overlay').classList.add('show');
-                    UI.setBtnLoading(submitBtn, false, '確認提交報名');
-                    return;
-                }
-                if (data.result === 'error') {
-                    UI.showToast((data.message||'目前系統繁忙，請稍後再試或加入官方 LINE 聯繫'),'error');
-                    UI.setBtnLoading(submitBtn, false, '確認提交報名');
-                    return;
-                }
-                // 成功：清除快取，名額即時更新
+            if(regSubmitting) return;
+            if(!Validator.validateRegForm()) return;
+            regSubmitting=true;
+            UI.setBtnLoading(submitBtn,true,'確認提交報名');
+            var fd=new FormData(bookingForm);
+            fd.append('action',CONFIG.actions.REGISTER);
+            Api.post(fd).then(function(data){
+                if(data.result==='duplicate'){ UI.showToast(data.message||'此電話或 Email 已報名本場次','info'); UI.setBtnLoading(submitBtn,false,'確認提交報名'); return; }
+                if(data.result==='closed'){ lockFormAsFull(true); UI.setBtnLoading(submitBtn,false,'確認提交報名'); return; }
+                if(data.result==='error'){ UI.showToast(data.message||'目前系統繁忙，請稍後再試','error'); UI.setBtnLoading(submitBtn,false,'確認提交報名'); return; }
                 invalidateLocalCache();
-
-                // v8: 根據狀態顯示簡潔成功訊息，無確認機制
-                if (data.status === '🔸備取') {
+                if(data.status&&data.status.indexOf('備取')>=0){
                     fireLeadEvent('候補');
-                    UI.showResult({
-                        title:'候補登記成功 🌸',
-                        desc:'<p class="text-center">您已列入候補名單！<br>候補確認信已寄至您的信箱，請查收。<br><br>一旦有名額釋出將依序優先通知您，<br>感謝您的耐心，期待與您在花香中相聚 🌺</p>',
-                        icon:'fa-solid fa-envelope-open-text text-[#12110F] text-2xl'
-                    });
+                    UI.showResult({title:'候補登記成功 🌸',desc:'<p class="text-center">您已列入候補名單！<br>候補確認信已寄至您的信箱，請查收。<br><br>一旦有名額釋出將依序優先通知您 🌺</p>',icon:'fa-solid fa-envelope-open-text text-[#12110F] text-2xl'});
                 } else {
                     fireLeadEvent('正取');
-                    // v8: 正取訊息不含「請加入LINE確認」
-                    UI.showResult({
-                        title:'報名成功 🎉',
-                        desc:'<p class="text-center">恭喜您！席次已為您保留。<br>課程確認信已寄至您的信箱，請查收。<br><br>如有任何問題，歡迎加入官方 LINE 聯繫 🌸</p>',
-                        icon:'fa-solid fa-check text-[#12110F] text-2xl'
-                    });
+                    UI.showResult({title:'報名成功 🎉',desc:'<p class="text-center">恭喜您！席次已為您保留。<br>課程確認信已寄至您的信箱，請查收。<br><br>如有任何問題，歡迎加入官方 LINE 聯繫 🌸</p>',icon:'fa-solid fa-check text-[#12110F] text-2xl'});
                 }
-            }).catch(function(err) {
-                console.error('[register]', err.message);
-                UI.showToast('目前系統繁忙，請稍後再試或加入官方 LINE 聯繫','error');
-                UI.setBtnLoading(submitBtn, false, '確認提交報名');
-            }).finally(function() { regSubmitting = false; });
+            }).catch(function(err){
+                console.error('[register]',err.message);
+                UI.showToast('目前系統繁忙，請稍後再試','error');
+                UI.setBtnLoading(submitBtn,false,'確認提交報名');
+            }).finally(function(){regSubmitting=false;});
         });
 
-        // ── Sticky Bottom CTA ──
-        (function() {
-            var stickyCta=document.getElementById('sticky-cta'), formPanel=document.querySelector('.glass-panel');
-            if (!stickyCta||!formPanel) return;
-            var formVisible=false, scrolledOver=false;
-            function updateCTA() {
-                scrolledOver && !formVisible ? stickyCta.classList.remove('translate-y-full') : stickyCta.classList.add('translate-y-full');
-            }
-            var observer=new IntersectionObserver(function(entries){
-                entries.forEach(function(en){ formVisible=en.isIntersecting; updateCTA(); });
-            },{threshold:0.05});
+        // ── Sticky CTA ──
+        (function(){
+            var stickyCta=document.getElementById('sticky-cta'),formPanel=document.querySelector('.glass-panel');
+            if(!stickyCta||!formPanel) return;
+            var formVisible=false,scrolledOver=false;
+            function updateCTA(){ scrolledOver&&!formVisible?stickyCta.classList.remove('translate-y-full'):stickyCta.classList.add('translate-y-full'); }
+            var observer=new IntersectionObserver(function(entries){ entries.forEach(function(en){formVisible=en.isIntersecting;updateCTA();}); },{threshold:0.05});
             observer.observe(formPanel);
-            window.addEventListener('scroll',function(){ scrolledOver=window.scrollY>200; updateCTA(); },{passive:true});
+            window.addEventListener('scroll',function(){scrolledOver=window.scrollY>200;updateCTA();},{passive:true});
         })();
 
     })();
