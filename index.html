@@ -1,15 +1,22 @@
 <!DOCTYPE html>
-<!-- index_v74.html — v7.5
+<!-- index_v76.html — v7.6
      御景家報名系統 完整版（FB/IG/TikTok 廣告投放就緒）
-     ✅ 圖片修正（根本原因）：
-        → 舊版用 new Image() + crossOrigin="anonymous" 預測試
-          → Drive thumbnail 不支援 CORS → 測試永遠失敗 → 顯示「請確認公開」
-        → 修正：直接設定 img.src，用 img.onload/onerror 處理，移除 crossorigin 屬性
-        → convertDriveUrl 新增 open?id= 格式支援
-     ✅ 速度優化：
-        → prefetch GAS 提前到 <head> inline script 立即觸發（不等 DOMContentLoaded）
-        → 字型加 display=swap
-        → 課程主圖 fetchpriority="high"
+
+     ✅ v7.6 修正：
+     【問題一】備取→正取 / 取消信無法重寄
+       → GAS onEditStatusChange 全面重寫 L 欄狀態機
+       → 備取改正取：發「升等信」而非跳過
+       → 取消信：每次改取消都發，不防重複
+
+     【問題二】刪除資料後仍顯示「已報名」
+       → 根本原因：前端 sessionStorage 快取了報名狀態
+       → 修正：移除 sessionStorage 的 isAlreadySubmitted / markSubmitted
+       → 改由後端資料庫做唯一性判斷（更可靠、刪除立即生效）
+
+     【問題三】UX 改善
+       → 重複報名錯誤訊息更友善，顯示具體原因
+       → 取消後可重新報名（後端 isDuplicate 排除 ❌取消）
+       → 保留所有既有視覺、動畫、骨架屏等功能不變
 -->
 <html lang="zh-TW">
 <head>
@@ -29,7 +36,6 @@
     <meta property="og:image:height" content="630">
     <meta property="og:locale" content="zh_TW">
     <meta property="og:site_name" content="御景家 YUJINGJIA ART STUDIO">
-    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="御景家＿神明花 | 基礎課程報名登記">
     <meta name="twitter:description" content="專為零基礎設計的神明花手作課，名額有限，點擊進入報名系統預約席次。">
@@ -37,7 +43,6 @@
     <link rel="canonical" href="">
     <meta name="referrer" content="origin-when-cross-origin">
 
-    <!-- ════ DNS prefetch & preconnect ════ -->
     <link rel="dns-prefetch" href="https://script.google.com">
     <link rel="dns-prefetch" href="https://script.googleusercontent.com">
     <link rel="dns-prefetch" href="https://fonts.googleapis.com">
@@ -50,7 +55,6 @@
     <link rel="preconnect" href="https://script.googleusercontent.com">
     <link rel="preconnect" href="https://lh3.googleusercontent.com" crossorigin>
 
-    <!-- ════ 字型非阻塞載入 ════ -->
     <link rel="preload" as="style"
           href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap"
@@ -59,7 +63,6 @@
       <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     </noscript>
 
-    <!-- ════ Font Awesome 非阻塞 ════ -->
     <link rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
           crossorigin="anonymous" referrerpolicy="no-referrer"
@@ -68,11 +71,9 @@
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     </noscript>
 
-    <!-- ════ Tailwind defer ════ -->
     <script defer src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        /* ════ Critical CSS ════ */
         :root {
             --brand-gold: #D4B78F;
             --brand-gold-dark: #A38A6A;
@@ -98,7 +99,6 @@
             background-size: 40px 40px, 100% 100%;
         }
 
-        /* ─── Skeleton ─── */
         .skeleton {
             background: linear-gradient(90deg, #1a1814 25%, #262219 50%, #1a1814 75%);
             background-size: 200% 100%;
@@ -110,7 +110,6 @@
         .skeleton-block { height:3.5rem; width:100%; }
         .skeleton-info  { height:5rem; width:100%; }
 
-        /* ─── Info Glass ─── */
         .info-glass {
             background: rgba(22,20,18,0.6);
             backdrop-filter: blur(16px);
@@ -151,7 +150,6 @@
             .course-card-sub   { font-size:0.9rem; }
         }
 
-        /* ─── Inputs ─── */
         input, select, textarea {
             background-color: rgba(23,21,18,0.8) !important;
             border: 1px solid var(--brand-accent) !important;
@@ -169,7 +167,6 @@
         .error-msg { color:#c0392b; font-size:0.78rem; margin-top:4px; letter-spacing:0.05em; display:none; }
         .error-msg.visible { display:block; }
 
-        /* ─── Buttons ─── */
         .btn-gold {
             position:relative;
             background: linear-gradient(135deg, var(--brand-gold) 0%, var(--brand-gold-dark) 100%);
@@ -221,7 +218,6 @@
         }
         .animate-fadeInUp { animation:fadeInUp 1s cubic-bezier(0.16,1,0.3,1) forwards; }
 
-        /* ─── Urgency bar ─── */
         #urgency-bar { display:none; overflow:hidden; }
         #urgency-bar.show { display:block; }
         @keyframes urgencyPulse { 0%,100%{opacity:1;} 50%{opacity:0.6;} }
@@ -233,7 +229,6 @@
             border-radius:0.75rem; margin-top:0.75rem;
         }
 
-        /* ─── Seats bar ─── */
         .seats-bar-wrap { height:3px; background:rgba(255,255,255,0.06); border-radius:2px; overflow:hidden; margin-top:0.5rem; }
         .seats-bar-fill { height:100%; border-radius:2px; background:linear-gradient(90deg,var(--brand-gold),#FF7A35); transition:width 1s cubic-bezier(0.4,0,0.2,1); will-change:width; }
 
@@ -295,7 +290,6 @@
 
         .section-hidden { display:none !important; }
 
-        /* ─── v7.3：圖片容器 ─── */
         .img-loading {
             background: linear-gradient(90deg, #1a1814 25%, #262219 50%, #1a1814 75%);
             background-size: 200% 100%;
@@ -316,7 +310,6 @@
             border-radius:9999px; padding:0.2rem 0.6rem; margin-top:0.4rem;
         }
 
-        /* ─── Config 同步指示器 ─── */
         #config-sync-indicator {
             position:fixed; bottom:calc(5rem + env(safe-area-inset-bottom));
             right:1rem; z-index:200;
@@ -358,9 +351,6 @@
     </script>
     -->
 
-    <!-- ════ v7.4：GAS JSONP prefetch — 在 head 解析完立即觸發，不等 DOMContentLoaded ════
-         這讓網路請求提早 ~300-600ms，資料在 JS 初始化前就已在路上
-    -->
     <script>
     (function() {
         var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxj3oGPP5Ck0EwnThYWo_d8BVjlf4MCiE2cby5WusM_504oV_Rz7OFAQw2Qjgxba0Pf/exec';
@@ -383,7 +373,6 @@
 
 <body class="bg-pattern min-h-screen">
 
-    <!-- ═══ Nav ═══ -->
     <nav class="sticky top-0 z-50 bg-[#0D0C0B]/80 backdrop-blur-xl border-b border-[#2A251B]/50">
         <div class="max-w-4xl mx-auto px-6 py-5 flex justify-between items-center">
             <div class="flex items-center gap-4 group cursor-pointer">
@@ -404,7 +393,6 @@
         </div>
     </nav>
 
-    <!-- ═══ Hero ═══ -->
     <header class="relative h-[28vh] md:h-[35vh] flex items-center justify-center overflow-hidden">
         <div class="absolute inset-0 bg-cover bg-center opacity-10 scale-110" id="hero-bg"
              style="background-image:url('https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&q=80&w=1200');"></div>
@@ -432,7 +420,6 @@
     <main class="max-w-3xl mx-auto px-6 relative z-10"
           style="padding-bottom: max(6rem, calc(4rem + env(safe-area-inset-bottom)));">
 
-        <!-- ═══ 課程卡片 Skeleton ═══ -->
         <div id="sk-course-card" class="rounded-2xl overflow-hidden mb-3">
             <div class="skeleton w-full" style="aspect-ratio:16/9;border-radius:1rem 1rem 0 0;"></div>
             <div class="p-4" style="background:rgba(22,20,18,0.6);border:1px solid rgba(42,37,27,0.8);border-top:none;border-radius:0 0 1rem 1rem;">
@@ -441,12 +428,9 @@
             </div>
         </div>
 
-        <!-- ═══ 課程卡片實體 ═══ -->
         <div id="course-card" class="rounded-2xl overflow-hidden mb-3 shadow-lg"
              style="display:none;background:rgba(22,20,18,0.75);border:1px solid rgba(42,37,27,0.9);">
-
             <div class="relative w-full overflow-hidden rounded-t-2xl" style="aspect-ratio:16/9;">
-                <!-- v7.3 修正：移除 crossorigin，直接用 img.src + onload/onerror -->
                 <div id="course-image-wrap" class="absolute inset-0 img-loading">
                     <img id="course-image"
                          src="" alt="課程圖片"
@@ -466,7 +450,6 @@
                           style="background:rgba(13,12,11,0.85);border:1px solid rgba(212,183,143,0.2);">零基礎手作課程</span>
                 </div>
             </div>
-
             <div class="px-5 pt-4 pb-5">
                 <h3 id="course-card-title" class="font-serif text-base md:text-lg text-[#E8DCC4] tracking-[0.15em] leading-snug mb-0.5"></h3>
                 <p id="course-card-date" class="text-sm text-[#5C5547] tracking-wider mb-2"></p>
@@ -479,7 +462,6 @@
             </div>
         </div>
 
-        <!-- ═══ 文案 + 數字統計條 ═══ -->
         <div id="course-proof-strip" class="info-glass mb-6 px-5 py-4 text-center" style="display:none;">
             <p class="text-[#E8DCC4] text-sm leading-relaxed tracking-wide mb-2">
                 <span id="proof-headline">只要 <span class="text-[#D4B78F] font-medium">3 小時</span>，跟著老師的步驟，你也能親手完成這般精緻的敬神花藝。</span>
@@ -505,7 +487,6 @@
             </div>
         </div>
 
-        <!-- ═══ 說明區塊 Skeleton ═══ -->
         <div id="sk-info-1" class="info-glass mb-2">
             <div class="info-glass-title"><div class="skeleton skeleton-text w-3/4"></div></div>
             <div class="info-glass-body"><div class="skeleton skeleton-info"></div></div>
@@ -519,7 +500,6 @@
             <div class="info-glass-body"><div class="skeleton skeleton-info"></div></div>
         </div>
 
-        <!-- ═══ 說明卡片 ═══ -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
             <div id="info-card-1" class="info-glass" style="display:none;padding:0.85rem 0.9rem;">
                 <div class="info-glass-title" style="margin-bottom:0.5rem;">
@@ -543,7 +523,6 @@
             </div>
         </div>
 
-        <!-- ═══ 報名須知 ═══ -->
         <div class="mb-6">
             <div id="info-card-2" class="info-glass" style="display:none;padding:0.85rem 0.9rem;">
                 <div class="info-glass-title" style="margin-bottom:0.5rem;">
@@ -558,7 +537,6 @@
             </div>
         </div>
 
-        <!-- ═══ 零基礎學員實作圖片展示 ═══ -->
         <div id="section-student-works" class="mb-6 animate-fadeInUp section-hidden" style="animation-delay:0.15s;">
             <div class="flex items-center gap-4 mb-4">
                 <div class="h-[1px] w-6 bg-gradient-to-r from-transparent to-[#D4B78F]/40"></div>
@@ -601,7 +579,6 @@
             </div>
         </div>
 
-        <!-- ═══ 主表單面板 ═══ -->
         <div class="glass-panel rounded-3xl p-5 sm:p-8 md:p-14 animate-fadeInUp relative">
 
             <div id="closed-overlay">
@@ -626,12 +603,10 @@
                         <div class="h-[1px] flex-grow bg-gradient-to-r from-[#3A3225] to-transparent"></div>
                     </div>
 
-                    <!-- Honeypot -->
                     <div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;" tabindex="-1">
                         <input type="text" name="_hp" id="_hp" autocomplete="off" tabindex="-1" placeholder="leave empty">
                     </div>
 
-                    <!-- 姓名 / 電話 -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
                         <div class="space-y-3">
                             <label class="text-sm tracking-[0.2em] text-[#8A8068] flex justify-between uppercase font-medium">
@@ -653,7 +628,6 @@
                         </div>
                     </div>
 
-                    <!-- Email -->
                     <div class="space-y-3">
                         <label class="text-sm tracking-[0.2em] text-[#8A8068] flex justify-between uppercase font-medium">
                             <span>電子郵件 / Email</span><span class="text-[#8B0000] opacity-80 font-bold tracking-widest">*必填</span>
@@ -664,7 +638,6 @@
                         <p class="error-msg" id="err-reg-email">請輸入有效的 Email 格式</p>
                     </div>
 
-                    <!-- 課程資訊 -->
                     <div class="space-y-3">
                         <label class="text-sm tracking-[0.2em] text-[#8A8068] uppercase font-medium">課程場次 / Course Info</label>
                         <div id="sk-course" class="skeleton skeleton-block rounded-xl"></div>
@@ -675,7 +648,6 @@
                         <input type="hidden" name="utm_campaign" id="utm_campaign">
                     </div>
 
-                    <!-- Checkboxes -->
                     <div class="pt-6 border-t border-[#2A251B]/50 space-y-5">
                         <div id="sk-checkbox" class="skeleton rounded-xl" style="height:3.5rem"></div>
                         <label id="checkbox-wrap" class="flex items-start gap-5 cursor-pointer group" style="display:none">
@@ -710,7 +682,6 @@
                     </div>
                 </section>
 
-                <!-- 提交區 -->
                 <div id="form-submit-zone">
                     <div id="sk-btn" class="skeleton rounded-2xl" style="height:4rem"></div>
                     <button type="submit" id="submitBtn"
@@ -736,7 +707,7 @@
         </div>
     </main>
 
-    <!-- ═══ 隱私政策彈窗 ═══ -->
+    <!-- 隱私政策彈窗 -->
     <div id="privacy-modal" class="fixed inset-0 z-[110]" style="display:none;align-items:center;justify-content:center;padding:1.5rem">
         <div class="absolute inset-0 bg-black/90 backdrop-blur-xl" onclick="document.getElementById('privacy-modal').style.display='none'"></div>
         <div class="bg-[#0D0C0B] border border-[#D4B78F]/30 rounded-[2rem] p-8 md:p-12 max-w-lg w-full relative shadow-[0_0_100px_rgba(0,0,0,1)] animate-fadeInUp modal-scroll">
@@ -759,7 +730,7 @@
         </div>
     </div>
 
-    <!-- ═══ 額滿彈窗 ═══ -->
+    <!-- 額滿彈窗 -->
     <div id="full-modal" class="fixed inset-0 z-[100]" style="display:none;align-items:center;justify-content:center;padding:1.5rem">
         <div class="absolute inset-0 bg-black/90 backdrop-blur-xl"></div>
         <div class="bg-[#0D0C0B] border border-[#D4B78F]/30 rounded-[2rem] p-10 md:p-14 max-w-lg w-full relative shadow-[0_0_100px_rgba(0,0,0,1)] animate-fadeInUp modal-glow modal-scroll">
@@ -825,7 +796,7 @@
         </div>
     </div>
 
-    <!-- ═══ 成功彈窗 ═══ -->
+    <!-- 成功彈窗 -->
     <div id="success-modal" class="fixed inset-0 z-[100]" style="display:none;align-items:center;justify-content:center;padding:1.5rem">
         <div class="absolute inset-0 bg-black/90 backdrop-blur-xl"></div>
         <div class="bg-[#0D0C0B] border border-[#D4B78F]/30 rounded-[2rem] p-10 md:p-14 max-w-lg w-full relative text-center shadow-[0_0_100px_rgba(0,0,0,1)] animate-fadeInUp modal-glow modal-scroll">
@@ -852,7 +823,7 @@
         </div>
     </div>
 
-    <!-- ═══ 底部懸浮 CTA ═══ -->
+    <!-- 底部懸浮 CTA -->
     <div id="sticky-cta"
          class="fixed bottom-0 left-0 w-full z-40 transition-transform duration-500 ease-in-out translate-y-full"
          style="padding-bottom: env(safe-area-inset-bottom);">
@@ -866,16 +837,12 @@
         </div>
     </div>
 
-    <!-- ═══ Config 同步指示器 ═══ -->
     <div id="config-sync-indicator">🔄 資料已更新</div>
 
     <script>
     (() => {
         'use strict';
 
-        // ════════════════════════════════════════════
-        // ⚙️ 設定區
-        // ════════════════════════════════════════════
         const CONFIG = {
             scriptURL: 'https://script.google.com/macros/s/AKfycbxj3oGPP5Ck0EwnThYWo_d8BVjlf4MCiE2cby5WusM_504oV_Rz7OFAQw2Qjgxba0Pf/exec',
             actions: { CHECK_FULL:'checkFull', REGISTER:'register', WAITLIST:'waitlist' },
@@ -886,38 +853,21 @@
             PREFER_JSONP: true
         };
 
-        // ════════════════════════════════════════════
-        // v7.3 修正：Google Drive URL 轉換
-        // 支援格式：
-        //   /file/d/ID/view
-        //   /open?id=ID
-        //   ?id=ID 或 &id=ID
-        //   已是 /thumbnail 格式
-        //   其他 https 連結直接回傳
-        // ════════════════════════════════════════════
         function convertDriveUrl(url) {
             if (!url || typeof url !== 'string') return '';
             url = url.trim();
             if (!url) return '';
-            // 已是 thumbnail 格式，直接用
             if (url.indexOf('drive.google.com/thumbnail') >= 0) return url;
-            // /file/d/ID/ 格式（最常見）
             var m1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
             if (m1 && m1[1]) return 'https://drive.google.com/thumbnail?id=' + m1[1] + '&sz=w1200';
-            // /open?id=ID 格式
             var m2 = url.match(/\/open\?id=([a-zA-Z0-9_-]+)/);
             if (m2 && m2[1]) return 'https://drive.google.com/thumbnail?id=' + m2[1] + '&sz=w1200';
-            // ?id= 或 &id= 格式（/uc?export=view&id=... 等）
             var m3 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
             if (m3 && m3[1]) return 'https://drive.google.com/thumbnail?id=' + m3[1] + '&sz=w1200';
-            // 其他 https 連結直接回傳
             if (/^https?:\/\//.test(url)) return url;
             return '';
         }
 
-        // ════════════════════════════════════════════
-        // 本地快取（短 TTL）
-        // ════════════════════════════════════════════
         var _localCache = null, _localCacheTime = 0;
         function getLocalCache() {
             if (_localCache && (Date.now() - _localCacheTime) < CONFIG.LOCAL_CACHE_TTL) return _localCache;
@@ -926,7 +876,6 @@
         function setLocalCache(data) { _localCache = data; _localCacheTime = Date.now(); }
         function invalidateLocalCache() { _localCache = null; _localCacheTime = 0; }
 
-        // UTM 解析
         function parseUTM() {
             var p = new URLSearchParams(window.location.search);
             document.getElementById('utm_source').value   = p.get('utm_source')   || '';
@@ -939,7 +888,6 @@
             if (canon && !canon.getAttribute('href')) canon.setAttribute('href', cleanUrl);
         }
 
-        // 骨架屏 → 真實內容
         function revealUI() {
             ['sk-name','sk-phone','sk-email','sk-course','sk-checkbox','sk-btn',
              'sk-info-1','sk-info-2','sk-info-3','sk-course-card'].forEach(function(id) {
@@ -956,7 +904,6 @@
             if (btn) { btn.style.display = ''; btn.disabled = false; }
         }
 
-        // 表單驗證
         var Validator = {
             isEmail:  function(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()); },
             isPhone:  function(v) { return /^09\d{8}$/.test(v.trim().replace(/[-\s]/g, '')); },
@@ -1012,7 +959,7 @@
                     toast.style.cssText='position:fixed;bottom:calc(5rem + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(20px);z-index:9999;max-width:90vw;width:auto;padding:0.85rem 1.4rem;border-radius:1rem;font-size:0.78rem;line-height:1.6;letter-spacing:0.04em;text-align:center;pointer-events:none;opacity:0;transition:opacity 0.35s ease,transform 0.35s ease';
                     document.body.appendChild(toast);
                 }
-                var isErr=type==='error';
+                var isErr=(type==='error');
                 toast.style.background=isErr?'rgba(30,10,10,0.97)':'rgba(13,12,11,0.97)';
                 toast.style.border=isErr?'1px solid rgba(139,0,0,0.5)':'1px solid rgba(212,183,143,0.3)';
                 toast.style.color=isErr?'#e06c6c':'#D4B78F';
@@ -1020,26 +967,15 @@
                 toast.textContent=(isErr?'⚠ ':'✦ ')+msg;
                 toast.style.opacity='1'; toast.style.transform='translateX(-50%) translateY(0)';
                 clearTimeout(toast._timer);
-                toast._timer=setTimeout(function(){toast.style.opacity='0';toast.style.transform='translateX(-50%) translateY(20px)';},5000);
+                toast._timer=setTimeout(function(){toast.style.opacity='0';toast.style.transform='translateX(-50%) translateY(20px)';},6000);
             }
         };
 
-        // ════════════════════════════════════════════
-        // v7.3 修正：圖片載入
-        // 根本原因：舊版用 new Image() + crossOrigin="anonymous" 預測試
-        //   → Drive /thumbnail 不回傳 CORS header
-        //   → new Image() 的 onerror 被觸發 → 誤判為「載入失敗」
-        // 修正：直接設定 <img> 的 src，讓瀏覽器自己處理
-        //   → 不帶 crossorigin 屬性（純展示用不需要 CORS）
-        //   → img.onload / img.onerror 處理結果
-        //   → onerror 時才嘗試 /uc?export=view fallback
-        // ════════════════════════════════════════════
         function loadCourseImage(rawUrl) {
             var wrap     = document.getElementById('course-image-wrap');
             var img      = document.getElementById('course-image');
             var fallback = document.getElementById('course-image-fallback');
             if (!wrap || !img || !fallback) return;
-
             var url = convertDriveUrl(rawUrl);
             if (!url) {
                 wrap.classList.remove('img-loading');
@@ -1047,29 +983,18 @@
                 fallback.style.display = 'flex';
                 return;
             }
-
-            // 重置狀態
             wrap.classList.add('img-loading');
             img.style.display  = 'none';
             img.style.opacity  = '0';
             fallback.style.display = 'none';
-            // 移除舊的事件（防止重複綁定）
             img.onload  = null;
             img.onerror = null;
-
             function onSuccess() {
                 wrap.classList.remove('img-loading');
                 img.style.display = 'block';
-                // 強制 repaint 後再做 fade-in
-                requestAnimationFrame(function() {
-                    requestAnimationFrame(function() {
-                        img.style.opacity = '1';
-                    });
-                });
+                requestAnimationFrame(function() { requestAnimationFrame(function() { img.style.opacity = '1'; }); });
             }
-
             function onFail(triedUrl) {
-                // thumbnail 失敗 → 嘗試 /uc?export=view（舊版 fallback）
                 if (triedUrl.indexOf('/thumbnail') >= 0) {
                     var m = triedUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
                     if (m && m[1]) {
@@ -1082,7 +1007,6 @@
                 }
                 showImgError(triedUrl);
             }
-
             function showImgError(failedUrl) {
                 wrap.classList.remove('img-loading');
                 img.style.display      = 'none';
@@ -1091,9 +1015,7 @@
                     + '<span style="color:#5C5547;font-size:0.75rem;">圖片載入失敗</span>'
                     + '<span style="display:inline-flex;align-items:center;gap:0.35rem;font-size:0.7rem;letter-spacing:0.08em;color:#3A3225;background:rgba(22,20,18,0.8);border:1px solid rgba(42,37,27,0.8);border-radius:9999px;padding:0.2rem 0.6rem;margin-top:0.4rem;">'
                     + '請確認 Drive 圖片已設為「公開」</span>';
-                console.warn('[圖片] 載入失敗。\n確認步驟：\n1. Google Drive → 右鍵圖片 → 共用 → 「知道連結的任何人皆可檢視」\n2. config 表格 COURSE_IMAGE 欄填入分享連結（/file/d/... 格式）\nURL：', failedUrl);
             }
-
             img.onload  = onSuccess;
             img.onerror = function() { onFail(url); };
             img.src     = url;
@@ -1104,15 +1026,11 @@
             if (!el || !rawUrl) return;
             var url = convertDriveUrl(rawUrl);
             if (!url) return;
-            // 直接設定 src，讓瀏覽器自行處理，失敗時保留預設 Unsplash 圖
             var prevSrc = el.src;
             el.onerror = function() { el.src = prevSrc; el.onerror = null; };
             el.src = url;
         }
 
-        // ════════════════════════════════════════════
-        // Api — JSONP 優先策略
-        // ════════════════════════════════════════════
         var Api = {
             _jsonp: function(bust) {
                 return new Promise(function(resolve, reject) {
@@ -1210,16 +1128,13 @@
             }
         }
 
-        function checkAndRefreshSessionForNewCourse(courseDate) {
-            var stored = sessionStorage.getItem('reg_course_date');
-            if (stored && stored !== courseDate) sessionStorage.removeItem('reg_submitted');
-            sessionStorage.setItem('reg_course_date', courseDate);
+        // v7.6 修正：移除 sessionStorage courseDate 快取，不再依賴 session 判斷重複
+        // 改由後端 isDuplicate() 資料庫判斷（取消後可重報）
+        function checkAndRefreshSession(courseDate) {
+            // 保留 sessionStorage 只用於存 courseDate（供 poll 使用），不再用於防重複報名
+            try { sessionStorage.setItem('reg_course_date', courseDate); } catch(e) {}
         }
 
-        // ════════════════════════════════════════════
-        // v7.3：利用 head 的 prefetch 結果
-        // window.__gasPrefetchData 由 <head> 中的 inline script 注入
-        // ════════════════════════════════════════════
         var _prefetchUsed = false;
         function getPrefetchData() {
             if (!_prefetchUsed && window.__gasPrefetchData) {
@@ -1242,7 +1157,7 @@
             }
             if (dataVersion > _lastAppliedVersion) _lastAppliedVersion = dataVersion;
             updateSeatsUI(remaining, maxSeats);
-            if (data.courseDate) checkAndRefreshSessionForNewCourse(data.courseDate);
+            if (data.courseDate) checkAndRefreshSession(data.courseDate);
             if (data.isFull && maxSeats >= CONFIG.FUSE_THRESHOLD && remaining === 0) {
                 document.getElementById('closed-overlay').classList.add('show');
                 var btn = document.getElementById('submitBtn');
@@ -1285,8 +1200,6 @@
             setEl('course-card-sub',            data.courseSubtitle || '小班制精緻教學・材料全含・當天完成作品');
             setEl('course-card-badge',          data.courseBadge   || '零基礎手作課程');
             setEl('course-card-original-price', data.courseOriginalPrice || '');
-
-            // v7.3 圖片載入（直接設定 src，不用 new Image() 預測試）
             if (data.courseImage) {
                 loadCourseImage(data.courseImage);
             } else {
@@ -1297,7 +1210,6 @@
                 if (img) img.style.display='none';
                 if (fallback) fallback.style.display='flex';
             }
-
             setEl('proof-headline', data.proofHeadline);
             setEl('proof-body',     data.proofBody);
             setEl('stat1-num',      data.proofStat1Num);
@@ -1321,7 +1233,6 @@
             }
         }
 
-        // 背景輪詢
         var isFirstLoad = true;
         function pollStatus() {
             invalidateLocalCache();
@@ -1338,10 +1249,8 @@
             }, {passive:true});
         });
 
-        // ── 初始化 ──
         window.addEventListener('DOMContentLoaded', function() {
             parseUTM();
-
             var _scriptUrlOk = CONFIG.scriptURL && CONFIG.scriptURL.indexOf('YOUR_') < 0 && CONFIG.scriptURL.length > 50;
             if (!_scriptUrlOk) {
                 revealUI(); isFirstLoad = false;
@@ -1349,13 +1258,11 @@
                 if (display) { display.textContent='⚠️ 請在 HTML 的 CONFIG.scriptURL 填入您的 GAS 部署網址'; display.style.color='#c0392b'; }
                 return;
             }
-
             function initWithRetry(maxRetry, delay) {
                 maxRetry = maxRetry || 2; delay = delay || 2500;
                 var attempt = 0;
                 function tryOnce() {
                     attempt++;
-                    // 第一次優先用 head prefetch 結果
                     var p = (attempt === 1) ? (getPrefetchData() || Api.checkFull(false)) : Api.checkFull(true);
                     p.then(function(data) {
                         applyCourseInfo(data);
@@ -1374,7 +1281,6 @@
                             revealUI(); isFirstLoad = false;
                             var d=document.getElementById('course-display');
                             if (d) { d.textContent='課程資訊載入中，請稍候…'; d.style.color='#A39171'; }
-                            // 背景靜默重試（8 秒後）
                             setTimeout(function() {
                                 invalidateLocalCache();
                                 Api.checkFull(true).then(function(data) {
@@ -1393,7 +1299,6 @@
                 }
                 tryOnce();
             }
-
             initWithRetry();
         });
 
@@ -1412,7 +1317,8 @@
             fd.append('action', CONFIG.actions.WAITLIST);
             Api.post(fd).then(function(res) {
                 if (res.result === 'duplicate') {
-                    UI.showToast('您的電話或 Email 已登記過本場次候補，無需重複登記。', 'info');
+                    // v7.6：更友善的重複提示
+                    UI.showToast('您的電話或 Email 已登記過候補，若需修改請加入官方 LINE 聯繫。', 'info');
                     UI.setBtnLoading(waitlistBtn, false, '🌸 保留候補資格・優先通知我');
                     return;
                 }
@@ -1432,43 +1338,40 @@
         });
 
         // ── 正式報名送出 ──
+        // v7.6 核心修正：
+        //   移除 isAlreadySubmitted / markSubmitted（sessionStorage 快取）
+        //   改由後端資料庫判斷重複（刪除後立即可重報，取消後也可重報）
         var bookingForm=document.getElementById('bookingForm'), submitBtn=document.getElementById('submitBtn');
         var regSubmitting = false;
-
-        function getSubmittedKey(email, courseDate) {
-            return 'submitted_'+(courseDate||'').replace(/\s/g,'')+'_'+(email||'').toLowerCase().replace(/[^a-z0-9]/g,'_');
-        }
-        function markSubmitted(email, courseDate) { try { sessionStorage.setItem(getSubmittedKey(email,courseDate),'1'); } catch(e) {} }
-        function isAlreadySubmitted(email, courseDate) { try { return sessionStorage.getItem(getSubmittedKey(email,courseDate))==='1'; } catch(e) { return false; } }
 
         bookingForm.addEventListener('submit', function(e) {
             e.preventDefault();
             if (regSubmitting) return;
             if (!Validator.validateRegForm()) return;
-            var emailVal=(document.getElementById('reg-email')&&document.getElementById('reg-email').value||'').trim().toLowerCase();
-            var courseKey=sessionStorage.getItem('reg_course_date')||'';
-            if (isAlreadySubmitted(emailVal, courseKey)) {
-                UI.showToast('此 Email 已送出過本場次報名。如需更改資料請加入官方 LINE 聯繫。', 'info');
-                return;
-            }
+
+            // v7.6：不再有 sessionStorage 防重複，直接送後端
             regSubmitting = true;
             UI.setBtnLoading(submitBtn, true, '確認提交報名');
             var fd = new FormData(bookingForm);
             fd.append('action', CONFIG.actions.REGISTER);
             Api.post(fd).then(function(data) {
                 if (data.result === 'duplicate') {
-                    UI.showToast('您的電話或 Email 已報名過本場次，請勿重複報名。如有疑問請加入官方 LINE 聯繫。', 'info');
-                    UI.setBtnLoading(submitBtn, false, '確認提交報名'); return;
+                    // v7.6：後端回傳的具體說明（含加LINE指引）
+                    UI.showToast(data.message || '此電話或 Email 已報名本場次，如需修改請加入官方 LINE 聯繫。', 'info');
+                    UI.setBtnLoading(submitBtn, false, '確認提交報名');
+                    return;
                 }
                 if (data.result === 'closed') {
                     document.getElementById('closed-overlay').classList.add('show');
-                    UI.setBtnLoading(submitBtn, false, '確認提交報名'); return;
+                    UI.setBtnLoading(submitBtn, false, '確認提交報名');
+                    return;
                 }
                 if (data.result === 'error') {
                     UI.showToast((data.message||'目前系統繁忙，請稍後再試或加入官方 LINE 聯繫'),'error');
-                    UI.setBtnLoading(submitBtn, false, '確認提交報名'); return;
+                    UI.setBtnLoading(submitBtn, false, '確認提交報名');
+                    return;
                 }
-                markSubmitted(emailVal, courseKey);
+                // 成功：清除本地快取，讓名額即時更新
                 invalidateLocalCache();
                 if (data.status === '🔸備取') {
                     fireLeadEvent('候補');
